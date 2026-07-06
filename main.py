@@ -9,9 +9,10 @@ app = Flask(__name__)                    # this gets the name of the file so Fla
 proxied = FlaskBehindProxy(app)          # handle codio redirection
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-@app.route("/")                          # this tells you the URL the method below is related to
-def hello_world():
-    return "<p>Hello, World!</p>"        # this prints HTML to the webpage
+@app.route("/")
+@app.route("/home")
+def home():
+    return render_template('home.html', subtitle='Home Page', text='This is the home page')
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
