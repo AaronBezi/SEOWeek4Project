@@ -1,0 +1,6 @@
+#Ignore files API KEYS, DATABASE SECRETS
+.env
+.venv
+*.db 
+__pycache__
+
