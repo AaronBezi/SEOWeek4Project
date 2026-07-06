@@ -9,8 +9,8 @@ load_dotenv()
 
 app = Flask(__name__)                    # this gets the name of the file so Flask knows it's name
 proxied = FlaskBehindProxy(app)          # handle codio redirection
-# app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['SECRET_KEY'] = '84ff244c3a92221118eadbcb67bacd07'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+# app.config['SECRET_KEY'] = '84ff244c3a92221118eadbcb67bacd07'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 
 @app.route("/")
