@@ -4,6 +4,8 @@ from flask_behind_proxy import FlaskBehindProxy
 from forms import RegistrationForm
 import git
 import os
+from dotenv import load_env()
+load_dotenv()
 
 app = Flask(__name__)                    # this gets the name of the file so Flask knows it's name
 proxied = FlaskBehindProxy(app)          # handle codio redirection
