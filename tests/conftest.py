@@ -1,27 +1,26 @@
 import pytest
-import sqlite3
-
-# Expects: database.init_db(conn) sets up schema in the given connection
-from database import init_db
-
-# Expects: app.py exports a Flask instance named `app`
 from app import app as flask_app
+from database.database import db as _db
 
 
 @pytest.fixture
-def db():
-    """In-memory SQLite DB, schema applied, torn down after each test."""
-    conn = sqlite3.connect(':memory:')
-    conn.row_factory = sqlite3.Row
-    init_db(conn)
-    yield conn
-    conn.close()
-
-
-@pytest.fixture
-def client(db):
-    """Flask test client wired to the in-memory test DB."""
+def app():
     flask_app.config['TESTING'] = True
-    flask_app.config['DB'] = db
-    with flask_app.test_client() as c:
-        yield c
+    flask_app.config['WTF_CSRF_ENABLED'] = False
+    flask_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+
+    with flask_app.app_context():
+        _db.init_app(flask_app)
+        _db.create_all()
+        yield flask_app
+        _db.drop_all()
+
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+
+@pytest.fixture
+def db(_app):
+    return _db
