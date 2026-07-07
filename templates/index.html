@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Pool</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div id="landing-view" class="view active">
+        <h1 class="brand-title">Study Pool</h1>
+        <p class="brand-tagline">Share your study space, upload documents, and get quick summaries.</p>
+
+        <div class="button-container">
+            <button class="capsule-btn" onclick="navigateTo('dashboard')">
+                Sign In
+            </button>
+            <button class="capsule-btn" onclick="navigateTo('dashboard')">
+                Create Pool
+            </button>
+            <button class="capsule-btn" onclick="navigateTo('dashboard')">
+                Join Pool
+            </button>
+        </div>
+    </div>
+
+    <div id="dashboard-view" class="view">
+        <header>
+            <div class="logo" onclick="navigateTo('landing')">STUDY POOL</div>
+
+            <div class="menu-dropdown">
+                <button class="menu-trigger" onclick="toggleDropdown()" aria-label="Open Menu">
+                    <span class="three-dots"></span>
+                </button>
+                <div id="myDropdown" class="dropdown-content">
+                    <a href="#" onclick="navigateTo('landing')">Home</a>
+                    <a href="#" onclick="alert('Create Space feature coming soon!')">Create Pool</a>
+                    <a href="#" onclick="alert('Opening your other shared spaces...')">Join a Different Pool</a>
+                </div>
+            </div>
+        </header>
+
+        <div class="workspace-container">
+            <main class="notes-section">
+                <h2>Course Notes</h2>
+                <p class="placeholder-text">Upload your notes and generate summaries, making studying simpler!</p>
+            </main>
+
+            <div class="action-stack">
+                <button class="task-btn" onclick="alert('Select a document to upload...')">
+                    <span class="btn-icon">+</span>
+                    <span class="btn-text">Upload Doc</span>
+                </button>
+                <button class="task-btn summary-btn" onclick="alert('Generating summary...')">
+                    <span class="btn-icon">☰</span>
+                    <span class="btn-text">Summarize Notes</span>
+                </button>
+            </div>
+        </div>
+
+        <footer>
+            &copy; 2026 Study Pool
+        </footer>
+    </div>
+
+    <script>
+        function navigateTo(viewId) {
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.remove('active');
+            });
+            document.getElementById(viewId + '-view').classList.add('active');
+            document.getElementById("myDropdown").classList.remove("show");
+        }
+
+        function toggleDropdown() {
+            document.getElementById("myDropdown").classList.toggle("show");
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.menu-trigger') && !event.target.matches('.three-dots')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
