@@ -49,15 +49,21 @@
         <div class="workspace-container">
             <main class="notes-section">
                 <h2>Course Notes</h2>
-                <p class="placeholder-text">Upload your notes and generate summaries, making studying simpler!</p>
+                <div id="notes-content">
+                    <p class="placeholder-text">Upload your notes and generate summaries, making studying simpler!</p>
+                </div>
+                <div id="summary-content" style="display:none;"></div>
             </main>
 
+            <input type="file" id="file-input" style="display:none"
+                   accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg">
+
             <div class="action-stack">
-                <button class="task-btn" onclick="alert('Select a document to upload...')">
+                <button class="task-btn" id="upload-btn">
                     <span class="btn-icon">+</span>
                     <span class="btn-text">Upload Doc</span>
                 </button>
-                <button class="task-btn summary-btn" onclick="alert('Generating summary...')">
+                <button class="task-btn summary-btn" id="summarize-btn">
                     <span class="btn-icon">☰</span>
                     <span class="btn-text">Summarize Notes</span>
                 </button>
