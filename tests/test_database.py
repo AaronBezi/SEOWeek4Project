@@ -1,5 +1,5 @@
 import pytest
-from database import (
+from database.database import (  # functions to be added by Cailan
     create_user,
     get_user_by_email,
     create_study_group,
@@ -10,17 +10,21 @@ from database import (
 
 class TestCreateUser:
     def test_returns_user_id(self, db):
-        # create a user and assert the returned value is a positive integer ID
+        # create a user with (username, email, password) and assert the returned value is a positive integer id
         pass
 
     def test_duplicate_email_raises(self, db):
         # create two users with the same email and assert an exception is raised
         pass
 
+    def test_duplicate_username_raises(self, db):
+        # create two users with the same username and assert an exception is raised
+        pass
+
 
 class TestGetUserByEmail:
-    def test_returns_user_dict(self, db):
-        # create a user, look them up by email, assert their fields match
+    def test_returns_user(self, db):
+        # create a user, look them up by email, assert user.username matches
         pass
 
     def test_missing_email_returns_none(self, db):
@@ -29,16 +33,18 @@ class TestGetUserByEmail:
 
 
 class TestCreateStudyGroup:
+    # waiting on StudyGroup model to be added to models.py
     def test_returns_group_id(self, db):
-        # create a user, create a group owned by them, assert a positive integer ID is returned
+        # create a user, create a group owned by them, assert a positive integer id is returned
         pass
 
     def test_invalid_owner_raises(self, db):
-        # pass a nonexistent owner_id and assert an exception is raised
+        # pass a nonexistent owner id and assert an exception is raised
         pass
 
 
 class TestGroupMembers:
+    # waiting on StudyGroup model to be added to models.py
     def test_add_and_retrieve_member(self, db):
         # add a member to a group and assert they appear in get_group_members
         pass
