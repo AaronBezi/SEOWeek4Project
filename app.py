@@ -2,6 +2,8 @@ from flask import Flask, render_template, url_for, flash, redirect, request
 # url_for allows us to find where this file is in our HTML
 from flask_behind_proxy import FlaskBehindProxy
 from forms import RegistrationForm
+from models import User
+from database import db
 import git
 import os
 from dotenv import load_dotenv
@@ -11,6 +13,10 @@ app = Flask(__name__)                    # this gets the name of the file so Fla
 proxied = FlaskBehindProxy(app)          # handle codio redirection
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
 
 @app.route("/")
 def home():
@@ -21,6 +27,10 @@ def home():
 def register():
     form = RegistrationForm()
     if form.validate_on_submit(): # checks if entries are valid
+        user = User(username=form.username.data,email=form.email.data,
+                    password = form.password.data)
+        db.session.add(user) #add user into database
+        db.session.commit()  #save changes to database
         flash(f'Account created for {form.username.data}!', 'success')
         return redirect(url_for('home')) # if so - send to home page
     return render_template('register.html', title='Register', form=form)
