@@ -1,44 +1,70 @@
-{% extends "layout.html" %} {% block content %} 
-<div class="content-section">
-    <form method="POST" action="">
-    {{ form.hidden_tag() }}
-    <fieldset class="form-group">
-        <div class="form-group">
-            {{ form.username.label(class="form-control-label") }} {% if form.username.errors %} {{ form.username(class="form-control form-control-lg is-invalid") }}
-            <div class="invalid-feedback"> 
-                {% for error in form.username.errors%} 
-                <span>{{error}}</span> {% endfor %} 
-            </div> 
-            {% else %} {{ form.username(class="form-control form-control-lg") }} {% endif %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Study Pool</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div id="register-view" class="view active">
+        <div class="auth-card">
+            <h1 class="brand-title auth-title">Study Pool</h1>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+
+                <div class="form-group">
+                    {{ form.username.label(class="form-label") }}
+                    {{ form.username(class="text-input" + (" input-invalid" if form.username.errors else "")) }}
+                    {% for error in form.username.errors %}
+                        <span class="field-error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.email.label(class="form-label") }}
+                    {{ form.email(class="text-input" + (" input-invalid" if form.email.errors else "")) }}
+                    {% for error in form.email.errors %}
+                        <span class="field-error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.password.label(class="form-label") }}
+                    {{ form.password(class="text-input" + (" input-invalid" if form.password.errors else "")) }}
+                    {% for error in form.password.errors %}
+                        <span class="field-error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.confirm_password.label(class="form-label") }}
+                    {{ form.confirm_password(class="text-input" + (" input-invalid" if form.confirm_password.errors else "")) }}
+                    {% for error in form.confirm_password.errors %}
+                        <span class="field-error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+
+                {{ form.submit(class="capsule-btn auth-submit") }}
+            </form>
+
+            <a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
         </div>
-        <div class="form-group">
-            {{ form.email.label(class="form-control-label") }} {% if form.email.errors %} {{ form.email(class="form-control form-control-lg is-invalid") }}
-            <div class="invalid-feedback"> 
-                {% for error in form.email.errors%} 
-                <span>{{error}}</span> {% endfor %} 
-            </div> 
-            {% else %} {{ form.email(class="form-control form-control-lg") }} {% endif %}
-        </div>
-        <div class="form-group">
-            {{ form.password.label(class="form-control-label") }} {% if form.password.errors %} {{ form.password(class="form-control form-control-lg is-invalid") }}
-            <div class="invalid-feedback">
-                {% for error in form.password.errors%} 
-                <span>{{error}}</span> {% endfor %} 
-            </div> 
-            {% else %} {{ form.password(class="form-control form-control-lg") }} {% endif %}
-        </div>
-        <div class="form-group">
-            {{ form.confirm_password.label(class="form-control-label") }} {% if form.confirm_password.errors %} {{ form.confirm_password(class="form-control form-control-lg is-invalid") }}
-            <div class="invalid-feedback">
-                {% for error in form.confirm_password.errors%} 
-                <span>{{error}}</span> {% endfor %} 
-            </div> 
-            {% else %} {{ form.confirm_password(class="form-control form-control-lg") }} {% endif %}
-        </div>
-    </fieldset>
-    
-    <div class="form-group">
-        {{ form.submit(class="btn btn-outline-info") }}
     </div>
-    </form>
-</div> {% endblock content %}
+</body>
+</html>

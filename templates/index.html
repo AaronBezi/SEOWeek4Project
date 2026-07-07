@@ -18,9 +18,9 @@
         <p class="brand-tagline">Share your study space, upload documents, and get quick summaries.</p>
 
         <div class="button-container">
-            <button class="capsule-btn" onclick="navigateTo('dashboard')">
+            <a class="capsule-btn" href="{{ url_for('register') }}">
                 Sign In
-            </button>
+            </a>
             <button class="capsule-btn" onclick="navigateTo('dashboard')">
                 Create Pool
             </button>

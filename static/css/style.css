@@ -79,6 +79,12 @@ body {
     letter-spacing: 1px;
 }
 
+a.capsule-btn {
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+}
+
 .capsule-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.3);
@@ -277,6 +283,82 @@ header {
     font-style: normal;
     line-height: 1.7;
     font-size: 17.6px;
+}
+
+/* register / auth page */
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    margin: 64px auto;
+    padding: 40px;
+    background: #ffffff;
+    color: var(--text-dark);
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+}
+
+.auth-title {
+    font-size: 280%;
+    color: var(--bg-color);
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+}
+
+.form-label {
+    font-size: 14.4px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.text-input {
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 16px;
+    font-family: inherit;
+}
+
+.text-input.input-invalid {
+    border-color: #dc2626;
+}
+
+.field-error {
+    color: #dc2626;
+    font-size: 13px;
+}
+
+.auth-submit {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.auth-back-link {
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    color: var(--bg-color);
+    font-size: 14px;
+}
+
+.flash-message {
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.flash-success {
+    background: #d1fae5;
+    color: #065f46;
 }
 
 footer {
