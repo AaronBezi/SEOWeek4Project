@@ -1,3 +1,64 @@
+document.addEventListener('DOMContentLoaded', function () {
+    const uploadBtn = document.getElementById('upload-btn');
+    const fileInput = document.getElementById('file-input');
+    const summarizeBtn = document.getElementById('summarize-btn');
+    const notesContent = document.getElementById('notes-content');
+    const summaryContent = document.getElementById('summary-content');
+
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', function () {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', function () {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            uploadBtn.disabled = true;
+            uploadBtn.querySelector('.btn-text').textContent = 'Uploading...';
+
+            fetch('/upload', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    notesContent.innerHTML = `<p class="placeholder-text">Uploaded: <strong>${file.name}</strong></p>`;
+                })
+                .catch(() => {
+                    notesContent.innerHTML = `<p class="placeholder-text">Upload failed. Please try again.</p>`;
+                })
+                .finally(() => {
+                    uploadBtn.disabled = false;
+                    uploadBtn.querySelector('.btn-text').textContent = 'Upload Doc';
+                    fileInput.value = '';
+                });
+        });
+    }
+
+    if (summarizeBtn) {
+        summarizeBtn.addEventListener('click', function () {
+            summarizeBtn.disabled = true;
+            summarizeBtn.querySelector('.btn-text').textContent = 'Summarizing...';
+
+            fetch('/summarize', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    summaryContent.style.display = 'block';
+                    summaryContent.innerHTML = `<h3>Summary</h3><p>${data.summary}</p>`;
+                })
+                .catch(() => {
+                    summaryContent.style.display = 'block';
+                    summaryContent.innerHTML = `<p class="placeholder-text">Summarization failed. Please try again.</p>`;
+                })
+                .finally(() => {
+                    summarizeBtn.disabled = false;
+                    summarizeBtn.querySelector('.btn-text').textContent = 'Summarize Notes';
+                });
+        });
+    }
+});
+
 function navigateTo(viewId) {
     document.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
