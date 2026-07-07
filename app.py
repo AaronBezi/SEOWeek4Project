@@ -46,6 +46,7 @@ def upload():
     if not allowed_file(file.filename):
         return {'error': 'Unsupported file format'}, 400
     note_id = upload_note_file(file)
+
     return {'note_id': note_id}, 200
 
 @app.route("/update_server", methods=['POST'])

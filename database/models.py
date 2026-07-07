@@ -24,6 +24,13 @@ class Notes(db.Model):
     file_path = db.Column(db.String(500),nullable=False)
     time_uploaded = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
 
+    #create note object
+    def create_Note(user_id,note_name,file_path):
+        pass
+
+        
+        
+
 
 
 
@@ -37,9 +44,18 @@ class Notes_Summary(db.Model):
     summary_text = db.Column(db.Text,nullable=False)
     time_summarized = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
 
+    def add_summary(from_notes_id,from_user_id,note_name,summary_text):
+        pass
 
 
+
+#StudyGroup Scehema
+class StudyGroup(db.Model):
+    __tablename__ = "study_groups"
+    group_id = db.Column(db.Integer,primary_key=True)
+    group_name = db.Column(db.String(255),nullable=False)
+    created_by = db.Column(db.Integer,db.ForeginKey("users.user_id"),nullable=False)
+    time_created =  db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
 
     
-
 
