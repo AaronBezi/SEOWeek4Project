@@ -10,7 +10,8 @@ def app():
     flask_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
 
     with flask_app.app_context():
-        _db.init_app(flask_app)
+        if 'sqlalchemy' not in flask_app.extensions:
+            _db.init_app(flask_app)
         _db.create_all()
         yield flask_app
         _db.drop_all()
@@ -22,5 +23,5 @@ def client(app):
 
 
 @pytest.fixture
-def db(_app):
+def db(app):
     return _db

@@ -1,18 +1,23 @@
 import pytest
+from io import BytesIO
 
 
 class TestUploadNotes:
-    def test_upload_valid_file_returns_200(self, client):
-        # POST a valid file to /upload and assert a 200 response with a note ID
-        pass
+    def test_upload_valid_file_returns_200(self, client, monkeypatch):
+        monkeypatch.setattr('app.upload_note_file', lambda file: 'fake-note-id')
+        data = {'file': (BytesIO(b'hello world'), 'notes.pdf')}
+        response = client.post('/upload', data=data, content_type='multipart/form-data')
+        assert response.status_code == 200
+        assert response.get_json()['note_id'] == 'fake-note-id'
 
     def test_upload_missing_file_returns_400(self, client):
-        # POST to /upload with no file attached and assert a 400 response
-        pass
+        response = client.post('/upload', data={}, content_type='multipart/form-data')
+        assert response.status_code == 400
 
     def test_upload_unsupported_format_returns_400(self, client):
-        # POST a file with an unsupported extension and assert a 400 response
-        pass
+        data = {'file': (BytesIO(b'hello'), 'notes.exe')}
+        response = client.post('/upload', data=data, content_type='multipart/form-data')
+        assert response.status_code == 400
 
 
 class TestGroups:
