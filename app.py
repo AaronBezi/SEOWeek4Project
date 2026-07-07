@@ -2,6 +2,7 @@ from flask import Flask, render_template, url_for, flash, redirect, request
 # url_for allows us to find where this file is in our HTML
 from flask_behind_proxy import FlaskBehindProxy
 from forms import RegistrationForm
+from storage import allowed_file, upload_note_file
 import git
 import os
 from dotenv import load_dotenv
@@ -24,6 +25,16 @@ def register():
         flash(f'Account created for {form.username.data}!', 'success')
         return redirect(url_for('home')) # if so - send to home page
     return render_template('register.html', title='Register', form=form)
+
+@app.route("/upload", methods=['POST'])
+def upload():
+    file = request.files.get('file')
+    if file is None or file.filename == '':
+        return {'error': 'No file provided'}, 400
+    if not allowed_file(file.filename):
+        return {'error': 'Unsupported file format'}, 400
+    note_id = upload_note_file(file)
+    return {'note_id': note_id}, 200
 
 @app.route("/update_server", methods=['POST'])
 def webhook():
