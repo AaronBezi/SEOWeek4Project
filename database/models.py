@@ -1,13 +1,41 @@
 from .database import db
 from datetime import datetime
+from sqlalchemy import func
 #File used to create Schemas for the database
 
+#User table schema
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key = True)
+    __tablename__ = "users"     #easier access for database
+    user_id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(20),nullable=False)
-    time_created = db.Column(db.DateTime, nullable = False, default = datetime.utcnow)
+    password = db.Column(db.String(128),nullable=False)
+    time_created = db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
+
+
+
+
+#Notes schema
+class Notes(db.Model):
+    __tablename__ = "notes"
+    notes_id = db.Column(db.Integer, primary_key = True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"),nullable = False)  #matches user_id of user who uploaded the note
+    note_name = db.Column(db.String(80),nullable=False)
+    file_path = db.Column(db.String(500),nullable=False)
+    time_uploaded = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
+
+
+
+
+#Summary_notes Schema
+class Notes_Summary(db.Model):
+    __tablename__ = "notes_summaries"
+    summary_id = db.Column(db.Integer,primary_key=True)
+    from_notes_id = db.Column(db.Integer,db.ForeignKey("notes.notes_id"),nullable=False)  #matches note_id summary came from
+    from_user_id = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False)
+    note_name = db.Column(db.String(80),nullable=False)
+    summary_text = db.Column(db.Text,nullable=False)
+    time_summarized = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
 
 
 
