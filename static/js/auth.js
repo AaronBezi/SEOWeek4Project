@@ -1,14 +1,19 @@
-// Sign-up button flow
+function navigateTo(viewId) {
+    document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
+    });
+    document.getElementById(viewId + '-view').classList.add('active');
+    document.getElementById('myDropdown').classList.remove('show');
+}
 
-// 1. Wait for the page to load
+function toggleDropdown() {
+    document.getElementById('myDropdown').classList.toggle('show');
+}
 
-// 2. Get a reference to the Sign Up button
-
-// 3. When the Sign Up button is clicked:
-//    - Redirect the user to the sign-up form page
-
-// 4. On the sign-up form page, when the user submits the form:
-//    - Collect the input values (name, email, password)
-//    - Send the data to the backend
-//    - If successful: redirect to the dashboard
-//    - If error: show an error message to the user
+window.onclick = function (event) {
+    if (!event.target.matches('.menu-trigger') && !event.target.matches('.three-dots')) {
+        document.querySelectorAll('.dropdown-content').forEach(dropdown => {
+            dropdown.classList.remove('show');
+        });
+    }
+};
