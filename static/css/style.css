@@ -1,0 +1,290 @@
+/* key elements to the theme */
+:root {
+    --bg-color: #1F628E;
+    --btn-bg: #2d3748;
+    --text-dark: #111827;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Sofia Sans', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: #ffffff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* view switcher styling */
+.view {
+    display: none;
+}
+.view.active {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* view */
+#landing-view {
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    text-align: center;
+    min-height: 100vh;
+}
+
+.brand-title {
+    font-family: 'Geist Pixel', sans-serif;
+    font-size: 600%;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 1px 0px 0px currentColor, -1px 0px 0px currentColor;
+}
+
+.brand-tagline {
+    font-size: 19.2px;
+    margin-bottom: 48px;
+    opacity: 0.9;
+    max-width: 500px;
+}
+
+.button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    width: 275px;
+    max-width: 450px;
+}
+
+.capsule-btn {
+    background-color: #e5e7eb;
+    color: var(--text-dark);
+    padding: 19.2px 40px;
+    border-radius: 50px;
+    font-size: 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    letter-spacing: 1px;
+}
+
+.capsule-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+/* workspace */
+header {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 16px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.logo {
+    font-family: 'Geist Pixel', sans-serif;
+    font-size: 28.8px;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-shadow: 1px 0px 0px currentColor, -1px 0px 0px currentColor;
+}
+
+.menu-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.menu-trigger {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.menu-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.three-dots {
+    display: inline-block;
+    position: relative;
+    font-size: 5px;
+    width: 1em;
+    height: 1em;
+    background-color: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 -1.5em 0 0 #ffffff,
+                0 1.5em 0 0 #ffffff;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #ffffff;
+    min-width: 220px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    z-index: 10;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.dropdown-content a {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    font-size: 15.2px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.dropdown-content a:last-child {
+    border-bottom: none;
+}
+
+.dropdown-content a:hover {
+    background-color: #f3f4f6;
+}
+
+.show {
+    display: block;
+}
+
+/* "White Board"- where people upload notes */
+.workspace-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 24px;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* organizes task buttons */
+.action-stack {
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    z-index: 5;
+    align-items: flex-start;
+}
+
+/* task buttons on white board */
+.task-btn {
+    background-color: var(--btn-bg);
+    color: #ffffff;
+    border: none;
+    height: 46px;
+    width: 46px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 17.6px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 13px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+    overflow: hidden;
+    white-space: nowrap;
+
+    transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                background-color 0.2s,
+                transform 0.2s;
+}
+
+.btn-icon {
+    font-size: 22.4px;
+    margin-right: 12px;
+    display: inline-block;
+    min-width: 20px;
+    text-align: center;
+}
+
+.btn-text {
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 15.2px;
+}
+
+/* continuous roll expansion effects */
+.action-stack:hover .task-btn {
+    background-color: #1a202c;
+    width: 180px;
+}
+
+.action-stack:hover .task-btn.summary-btn {
+    width: 200px;
+}
+
+.task-btn:hover {
+    transform: scale(1.03);
+}
+
+.action-stack:hover .btn-text {
+    opacity: 1;
+    transition-delay: 0.1s;
+}
+
+/* "White Board - area where people upload their notes" */
+.notes-section {
+    background: #ffffff;
+    color: var(--text-dark);
+    border-radius: 16px;
+    padding: 48px 48px 128px 48px;
+    flex: 1;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+    min-height: 500px;
+    position: relative;
+}
+
+.notes-section h2 {
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-bottom: 24px;
+    color: var(--bg-color);
+    font-size: 32px;
+}
+
+.placeholder-text {
+    color: #64748b;
+    font-style: normal;
+    line-height: 1.7;
+    font-size: 17.6px;
+}
+
+footer {
+    background-color: rgba(0, 0, 0, 0.3);
+    text-align: center;
+    padding: 16px;
+    font-size: 14.4px;
+    margin-top: auto;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    letter-spacing: 0.5px;
+}
