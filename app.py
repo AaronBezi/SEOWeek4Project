@@ -2,8 +2,8 @@ from flask import Flask, render_template, url_for, flash, redirect, request
 # url_for allows us to find where this file is in our HTML
 from flask_behind_proxy import FlaskBehindProxy
 from forms import RegistrationForm
-from models import User
-from database import db
+from database.models import User
+from database.database import db
 from storage import allowed_file, upload_note_file
 import git
 import os
@@ -12,8 +12,10 @@ load_dotenv()
 
 app = Flask(__name__)                    # this gets the name of the file so Flask knows it's name
 proxied = FlaskBehindProxy(app)          # handle codio redirection
+
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+
 db.init_app(app)
 
 with app.app_context():
@@ -57,4 +59,4 @@ def webhook():
         return 'Wrong event type', 400
 
 if __name__ == '__main__':               # this should always be at the end
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0", port=8080)
