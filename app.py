@@ -45,6 +45,12 @@ def home():
 def register():
     form = RegistrationForm()
     if form.validate_on_submit(): # checks if entries are valid
+        if User.query.filter_by(username=form.username.data).first():
+            form.username.errors.append('Username already taken.')
+            return render_template('register.html', title='Register', form=form)
+        if User.query.filter_by(email=form.email.data).first():
+            form.email.errors.append('Email already registered.')
+            return render_template('register.html', title='Register', form=form)
         hashed_password = generate_password_hash(form.password.data)
         user = User(username=form.username.data,email=form.email.data,
                     password = hashed_password)

@@ -1,5 +1,76 @@
 import pytest
 from io import BytesIO
+from werkzeug.security import generate_password_hash
+from database.models import User
+from database.database import db as _db
+
+
+def register_user(client, username='testuser', email='test@example.com',
+                  password='password123'):
+    return client.post('/register', data={
+        'username': username,
+        'email': email,
+        'password': password,
+        'confirm_password': password,
+    }, follow_redirects=True)
+
+
+def login_user_via_form(client, email='test@example.com', password='password123'):
+    return client.post('/login', data={
+        'email': email,
+        'password': password,
+    }, follow_redirects=True)
+
+
+class TestRegister:
+    def test_get_register_returns_200(self, client):
+        response = client.get('/register')
+        assert response.status_code == 200
+
+    def test_valid_registration_redirects(self, client):
+        response = register_user(client)
+        assert response.status_code == 200
+        assert b'Account created' in response.data
+
+    def test_duplicate_username_stays_on_form(self, client):
+        register_user(client, username='testuser', email='first@example.com')
+        response = register_user(client, username='testuser', email='second@example.com')
+        assert b'Register' in response.data
+
+    def test_duplicate_email_stays_on_form(self, client):
+        register_user(client, username='user1', email='same@example.com')
+        response = register_user(client, username='user2', email='same@example.com')
+        assert b'Register' in response.data
+
+    def test_mismatched_passwords_stays_on_form(self, client):
+        response = client.post('/register', data={
+            'username': 'testuser',
+            'email': 'test@example.com',
+            'password': 'password123',
+            'confirm_password': 'different456',
+        }, follow_redirects=True)
+        assert b'Register' in response.data
+
+
+class TestLogin:
+    def test_get_login_returns_200(self, client):
+        response = client.get('/login')
+        assert response.status_code == 200
+
+    def test_valid_login_redirects(self, client):
+        register_user(client)
+        response = login_user_via_form(client)
+        assert response.status_code == 200
+        assert b'Welcome back' in response.data
+
+    def test_wrong_password_stays_on_form(self, client):
+        register_user(client)
+        response = login_user_via_form(client, password='wrongpassword')
+        assert b'Invalid email or password' in response.data
+
+    def test_nonexistent_email_stays_on_form(self, client):
+        response = login_user_via_form(client, email='nobody@example.com')
+        assert b'Invalid email or password' in response.data
 
 
 class TestUploadNotes:
