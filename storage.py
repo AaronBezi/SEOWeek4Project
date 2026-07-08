@@ -24,4 +24,4 @@ def upload_note_file(file_storage):
     note_id = str(uuid.uuid4())
     storage_path = f"{note_id}.{extension}"
     get_supabase().storage.from_(BUCKET_NAME).upload(storage_path, file_storage.read())
-    return note_id
+    return note_id,storage_path
