@@ -2,15 +2,18 @@ import pytest
 from database.database import (  # functions to be added by Cailan
     create_user,
     get_user_by_email,
+    create_note,
+    get_notes_by_user,
     create_study_group,
     add_member_to_group,
     get_group_members,
+    create_summary,
 )
 
 
 class TestCreateUser:
     def test_returns_user_id(self, db):
-        # create a user with (username, email, password) and assert the returned value is a positive integer id
+        # create a user with (username, email, password) and assert the returned value is a positive integer user_id
         pass
 
     def test_duplicate_email_raises(self, db):
@@ -32,21 +35,48 @@ class TestGetUserByEmail:
         pass
 
 
-class TestCreateStudyGroup:
-    # waiting on StudyGroup model to be added to models.py
-    def test_returns_group_id(self, db):
-        # create a user, create a group owned by them, assert a positive integer id is returned
+class TestNotes:
+    def test_create_note_returns_notes_id(self, db):
+        # create a user, create a note linked to that user_id with (note_name, file_path)
+        # assert the returned value is a positive integer notes_id
         pass
 
-    def test_invalid_owner_raises(self, db):
-        # pass a nonexistent owner id and assert an exception is raised
+    def test_get_notes_by_user_returns_list(self, db):
+        # create a user, upload two notes for that user
+        # assert get_notes_by_user returns a list with both notes
+        pass
+
+    def test_get_notes_invalid_user_returns_empty(self, db):
+        # call get_notes_by_user with a nonexistent user_id and assert an empty list is returned
+        pass
+
+
+class TestNotesSummary:
+    def test_create_summary_returns_summary_id(self, db):
+        # create a user and a note, then create a summary linked to both
+        # assert the returned value is a positive integer summary_id
+        pass
+
+    def test_summary_text_saved_correctly(self, db):
+        # create a summary and fetch it back, assert summary_text matches what was saved
+        pass
+
+
+class TestCreateStudyGroup:
+    def test_returns_group_id(self, db):
+        # create a user, create a group with (group_name, created_by=user_id)
+        # assert the returned value is a positive integer group_id
+        pass
+
+    def test_invalid_created_by_raises(self, db):
+        # pass a nonexistent user_id as created_by and assert an exception is raised
         pass
 
 
 class TestGroupMembers:
-    # waiting on StudyGroup model to be added to models.py
     def test_add_and_retrieve_member(self, db):
-        # add a member to a group and assert they appear in get_group_members
+        # create a user and a group, add the user as a member
+        # assert they appear in get_group_members
         pass
 
     def test_duplicate_member_raises(self, db):
