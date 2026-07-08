@@ -1,10 +1,11 @@
 from .database import db
 from datetime import datetime
 from sqlalchemy import func
+from flask_login import LoginManager, current_user, UserMixin, login_user
 #File used to create Schemas for the database
 
 #User table schema
-class User(db.Model):
+class User(UserMixin,db.Model):
     __tablename__ = "users"     #easier access for database
     user_id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(20), unique=True, nullable=False)
@@ -12,6 +13,9 @@ class User(db.Model):
     password = db.Column(db.String(128),nullable=False)
     time_created = db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
 
+
+    def get_id(self):
+        return str(self.user_id)        #tells flask_login how to get user_id
 
 
 
@@ -25,12 +29,10 @@ class Notes(db.Model):
     time_uploaded = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
 
     #create note object
-    def create_Note(user_id,note_name,file_path):
-        pass
-
-        
-        
-
+    def create_Note(id,name,path):
+        note = Notes(user_id=id,note_name=name,file_path=path)
+        db.session.add(note)
+        db.session.commit()
 
 
 
@@ -54,8 +56,7 @@ class StudyGroup(db.Model):
     __tablename__ = "study_groups"
     group_id = db.Column(db.Integer,primary_key=True)
     group_name = db.Column(db.String(255),nullable=False)
-    created_by = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False)
+    created_by = db.Column(db.Integer,db.ForeginKey("users.user_id"),nullable=False)
     time_created =  db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
 
-    
 
