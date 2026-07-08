@@ -3,7 +3,7 @@ from flask_behind_proxy import FlaskBehindProxy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from forms import RegistrationForm, LoginForm
-from database.models import User
+from database.models import User,Notes,Notes_Summary
 from database.database import db
 from storage import allowed_file, upload_note_file
 import git
@@ -27,9 +27,13 @@ login_manager = LoginManager()  # create the extension object
 login_manager.login_view = 'login'  # indicates route to send to if they hit a page marked @login_required
 login_manager.init_app(app)  # bind object to this app
 
-@login_manager.user_loader 
+@login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# @login_manager.user_loader       #loads User object into flask app.
+# def load_user(user_id):
+#     return db.session.get(User,int(user_id))
 
 @app.route("/")
 def home():
@@ -71,14 +75,20 @@ def logout():
 
 @app.route("/upload", methods=['POST'])
 def upload():
+    if not current_user.is_authenticated:
+        return {"error": "User not logged in"}, 401
+    
     file = request.files.get('file')
     if file is None or file.filename == '':
         return {'error': 'No file provided'}, 400
+    
     if not allowed_file(file.filename):
         return {'error': 'Unsupported file format'}, 400
-    note_id = upload_note_file(file)
+    
+    storage_note_id,filepath = upload_note_file(file)
+    Notes.create_Note(current_user.user_id,file.filename,filepath)      #saves note to database
+    return {'storage_note_id': storage_note_id}, 200
 
-    return {'note_id': note_id}, 200
 
 @app.route("/update_server", methods=['POST'])
 def webhook():
@@ -92,3 +102,12 @@ def webhook():
 
 if __name__ == '__main__':               # this should always be at the end
     app.run(debug=True, host="0.0.0.0", port=8080)
+
+
+
+
+
+
+
+
+
