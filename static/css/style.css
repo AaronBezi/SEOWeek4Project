@@ -341,7 +341,8 @@ header {
     margin-top: 8px;
 }
 
-.auth-back-link {
+.auth-back-link,
+.auth-switch-link {
     display: block;
     text-align: center;
     margin-top: 16px;
@@ -359,6 +360,11 @@ header {
 .flash-success {
     background: #d1fae5;
     color: #065f46;
+}
+
+.flash-error {
+    background: #fee2e2;
+    color: #991b1b;
 }
 
 footer {

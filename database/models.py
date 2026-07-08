@@ -1,16 +1,20 @@
 from .database import db
 from datetime import datetime
 from sqlalchemy import func
+from flask_login import UserMixin
 #File used to create Schemas for the database
 
 #User table schema
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = "users"     #easier access for database
     user_id = db.Column(db.Integer, primary_key = True)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(128),nullable=False)
     time_created = db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
+    def get_id(self):
+        return str(self.user_id)
+
 
 
 

@@ -29,14 +29,6 @@
                 {{ form.hidden_tag() }}
 
                 <div class="form-group">
-                    {{ form.username.label(class="form-label") }}
-                    {{ form.username(class="text-input" + (" input-invalid" if form.username.errors else "")) }}
-                    {% for error in form.username.errors %}
-                        <span class="field-error">{{ error }}</span>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group">
                     {{ form.email.label(class="form-label") }}
                     {{ form.email(class="text-input" + (" input-invalid" if form.email.errors else "")) }}
                     {% for error in form.email.errors %}
@@ -52,18 +44,10 @@
                     {% endfor %}
                 </div>
 
-                <div class="form-group">
-                    {{ form.confirm_password.label(class="form-label") }}
-                    {{ form.confirm_password(class="text-input" + (" input-invalid" if form.confirm_password.errors else "")) }}
-                    {% for error in form.confirm_password.errors %}
-                        <span class="field-error">{{ error }}</span>
-                    {% endfor %}
-                </div>
-
                 {{ form.submit(class="capsule-btn auth-submit") }}
             </form>
 
-            <a class="auth-switch-link" href="{{ url_for('login') }}">Already have an account? Sign in</a>
+            <a class="auth-switch-link" href="{{ url_for('register') }}">Don't have an account? Sign up</a>
             <a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
         </div>
     </div>

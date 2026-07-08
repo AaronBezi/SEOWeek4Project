@@ -17,8 +17,16 @@
         <h1 class="brand-title">Study Pool</h1>
         <p class="brand-tagline">Share your study space, upload documents, and get quick summaries.</p>
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}        
+
         <div class="button-container">
-            <a class="capsule-btn" href="{{ url_for('register') }}">
+            <a class="capsule-btn" href="{{ url_for('login') }}">
                 Sign In
             </a>
             <button class="capsule-btn" onclick="navigateTo('dashboard')">

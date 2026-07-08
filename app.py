@@ -1,7 +1,8 @@
 from flask import Flask, render_template, url_for, flash, redirect, request
-# url_for allows us to find where this file is in our HTML
 from flask_behind_proxy import FlaskBehindProxy
-from forms import RegistrationForm
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from forms import RegistrationForm, LoginForm
 from database.models import User
 from database.database import db
 from storage import allowed_file, upload_note_file
@@ -21,6 +22,15 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
+
+login_manager = LoginManager()  # create the extension object
+login_manager.login_view = 'login'  # indicates route to send to if they hit a page marked @login_required
+login_manager.init_app(app)  # bind object to this app
+
+@login_manager.user_loader 
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 @app.route("/")
 def home():
     # renders the index.html file from the templates folder
@@ -30,13 +40,34 @@ def home():
 def register():
     form = RegistrationForm()
     if form.validate_on_submit(): # checks if entries are valid
+        hashed_password = generate_password_hash(form.password.data)
         user = User(username=form.username.data,email=form.email.data,
-                    password = form.password.data)
+                    password = hashed_password)
         db.session.add(user) #add user into database
         db.session.commit()  #save changes to database
         flash(f'Account created for {form.username.data}!', 'success')
         return redirect(url_for('home')) # if so - send to home page
     return render_template('register.html', title='Register', form=form)
+
+@app.route("/login", methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit(): # checks if entries are valid
+        user = User.query.filter_by(email=form.email.data).first() # searches for user by email and returns that row of user information
+        if user and check_password_hash(user.password, form.password.data): # verifies user exists and then checks if password matches.
+            login_user(user)
+            flash(f'Welcome back, {user.username}!', 'success')
+            return redirect(url_for('home')) # if so - log in the user and send to home page
+        
+        flash(f'Invalid email or password.', 'error')
+
+    return render_template('login.html', title='Sign In', form=form)
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
 
 @app.route("/upload", methods=['POST'])
 def upload():
