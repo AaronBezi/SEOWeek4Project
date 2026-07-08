@@ -331,6 +331,12 @@ header {
     border-color: #dc2626;
 }
 
+#summary-content div {
+    white-space: pre-line;
+    color: #111827;
+    line-height: 1.6;
+}
+
 .field-error {
     color: #dc2626;
     font-size: 13px;
