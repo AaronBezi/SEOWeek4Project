@@ -56,7 +56,7 @@ class StudyGroup(db.Model):
     __tablename__ = "study_groups"
     group_id = db.Column(db.Integer,primary_key=True)
     group_name = db.Column(db.String(255),nullable=False)
-    created_by = db.Column(db.Integer,db.ForeginKey("users.user_id"),nullable=False)
+    created_by = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False)
     time_created =  db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
 
 

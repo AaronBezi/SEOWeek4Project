@@ -58,7 +58,7 @@ def upload():
         return {'error': 'Unsupported file format'}, 400
     
     storage_note_id,filepath = upload_note_file(file)
-    Notes.create_Note(current_user.user_id,file.filename,filepath)
+    Notes.create_Note(current_user.user_id,file.filename,filepath)      #saves note to database
     return {'storage_note_id': storage_note_id}, 200
 
 @app.route("/update_server", methods=['POST'])
