@@ -6,6 +6,7 @@ from forms import RegistrationForm, LoginForm
 from database.models import User,Notes,Notes_Summary
 from database.database import db
 from storage import allowed_file, upload_note_file
+from api.openAI_api import generate_summary
 import git
 import os
 import subprocess
@@ -95,6 +96,24 @@ def upload():
     storage_note_id,filepath = upload_note_file(file)
     Notes.create_Note(current_user.user_id,file.filename,filepath)      #saves note to database
     return {'storage_note_id': storage_note_id}, 200
+
+
+@app.route("/api/summarize", methods=['POST'])
+def summarize():
+    if not current_user.is_authenticated:
+        return {'error': 'User not logged in'}, 401
+
+    notes = Notes.query.filter_by(user_id=current_user.user_id).all()  # fetch all notes for this user
+    if not notes:
+        return {'error': 'No notes found to summarize'}, 400
+
+    notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
+    result = generate_summary(notes_text)
+
+    if not result.get('success'):
+        return {'error': result.get('error', 'Could not generate summary')}, 500
+
+    return {'summary': result['summary']}, 200
 
 
 @app.route("/update_server", methods=['POST'])
