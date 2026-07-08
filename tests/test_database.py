@@ -1,11 +1,6 @@
 import pytest
-from database.database import (  # functions to be added by Cailan
-    create_user,
-    get_user_by_email,
-    create_study_group,
-    add_member_to_group,
-    get_group_members,
-)
+from database.models import Notes,User
+from database.database import db
 
 
 class TestCreateUser:
@@ -56,3 +51,19 @@ class TestGroupMembers:
     def test_empty_group_returns_empty_list(self, db):
         # create a group with no members and assert get_group_members returns []
         pass
+
+class TestCreateNote:
+    def test_create_note(self,db):
+        user = User(username="Testing123",email="testing245@gmail.com",password="sceret")
+        db.session.add(user)
+        db.session.commit()
+        note_id = Notes.create_Note(user.user_id,"lecture.pdf","/tmp/lecture.pdf")
+        note = Notes.query.filter_by(notes_id=note_id).first()
+        
+        assert note is not None
+        assert note.user_id == user.user_id
+        assert note.note_name == "lecture.pdf"
+        assert note.file_path == "/tmp/lecture.pdf"
+        
+
+
