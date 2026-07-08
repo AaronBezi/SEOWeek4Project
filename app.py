@@ -8,6 +8,7 @@ from database.database import db
 from storage import allowed_file, upload_note_file
 import git
 import os
+import subprocess
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -96,6 +97,12 @@ def webhook():
         repo = git.Repo('/home/seoproject2/SEOWeek4Project')
         origin = repo.remotes.origin
         origin.pull()
+        # ensures that proper modules are installed after pulling new code
+        venv_pip = '/home/seoproject2/.virtualenvs/studypool-venv/bin/pip'
+        result = subprocess.run([venv_pip, 'install', '-r', 'requirements.txt'], cwd='/home/seoproject2/SEOWeek4Project')
+        if result.returncode != 0:
+            return 'pip install failed', 500
+        os.utime('/var/www/seoproject2_pythonanywhere_com_wsgi.py', None)
         return 'Updated PythonAnywhere successfully', 200
     else:
         return 'Wrong event type', 400
