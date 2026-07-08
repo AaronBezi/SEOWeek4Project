@@ -36,16 +36,24 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    if (summarizeBtn) {
+   if (summarizeBtn) {
         summarizeBtn.addEventListener('click', function () {
             summarizeBtn.disabled = true;
             summarizeBtn.querySelector('.btn-text').textContent = 'Summarizing...';
 
-            fetch('/summarize', { method: 'POST' })
+            fetch('/api/summarize', { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
-                    summaryContent.style.display = 'block';
-                    summaryContent.innerHTML = `<h3>Summary</h3><p>${data.summary}</p>`;
+                    if (data.success) {
+                        summaryContent.style.display = 'block';
+                        summaryContent.innerHTML = `
+                            <h3>Summary</h3>
+                            <div>${data.summary}</div>
+                        `;
+                    } else {
+                        summaryContent.style.display = 'block';
+                        summaryContent.innerHTML = `<p class="placeholder-text" style="color: #dc2626;">Error: ${data.error || 'Could not generate summary.'}</p>`;
+                    }
                 })
                 .catch(() => {
                     summaryContent.style.display = 'block';
