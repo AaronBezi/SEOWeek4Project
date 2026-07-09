@@ -90,27 +90,26 @@ class TestSummarizationNew:
             assert result == "PDF TEXT PDF TEST TPDNDJJNDW"
 
     def test_generate_summary(self):
-        with patch('api.openAI_api.OpenAI') as mock_openai,\
+        with patch('api.openAI_api.client') as mock_client,\
             patch('api.openAI_api.extract_text') as mock_extract,\
             patch('api.openAI_api.download_file') as mock_download:
 
             mock_download.return_value = (b"%PDF-1.4 FINAL TEST FAKE FAKE FAKE","pdf")
             mock_extract.return_value = "DUMMY TEXT EXTARCTED TEXT"
 
-            mock_client_instance = mock_openai.return_value
             mock_response = MagicMock()
             mock_response.choices[0].message.content = "SUMMARY GENERATED HOORAY"
-            mock_client_instance.chat.completions.create.return_value = mock_response
+            mock_client.chat.completions.create.return_value = mock_response
 
             note = MagicMock()
             note.file_path = "homework/data_structures.pdf"
             result = generate_summary(note)
             
             print("\n---Generate summary test 3--")
-            print(result["error"])
+            print(result.get("error"))
             assert result['success'] == True
             assert result['summary'] == "SUMMARY GENERATED HOORAY"
-            mock_client_instance.chat.completions.create.assert_called_once_with(
+            mock_client.chat.completions.create.assert_called_once_with(
                 model="gpt-4o-mini",
             temperature = 0.2,
             messages = [
