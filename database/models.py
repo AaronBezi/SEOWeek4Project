@@ -33,6 +33,10 @@ class Notes(db.Model):
         note = Notes(user_id=id,note_name=name,file_path=path)
         db.session.add(note)
         db.session.commit()
+    
+    def get_Note(user_id):
+        pass
+
 
 
 
@@ -46,21 +50,31 @@ class Notes_Summary(db.Model):
     time_summarized = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
 
 
-    def get_summary(note_id): #queries summary for a given note
+    def get_summary(note_id):
+        #queries summary for a given note
         return Notes_Summary.query.filter_by(from_notes_id=note_id).first()
     
 
-    def add_summary(note_id,user_id,text):
-        curr_summary = Notes_Summary.get_summary(note_id)
+    def add_summary(from_note_id,user_id,text):
+        #Creates summary object if doesnt exist already, otherwise returns generated summary for corresponding note
+        curr_summary = Notes_Summary.get_summary(from_note_id)
         
-        #if summary exist just return otherwise create summayr object
         if curr_summary:
             return curr_summary
 
-        new_summary = Notes_Summary(from_notes_id=note_id,from_user_id=user_id,summary_text=text)
+        new_summary = Notes_Summary(from_notes_id=from_note_id,from_user_id=user_id,summary_text=text)
         db.session.add(new_summary)
         db.session.commit()
-        return new_summary      #returns summary object to get text do new_summary.text
+        return new_summary
+
+
+    def get_unsummarized_notes(user_id):
+        #returns user's notes that dont have a summary with outer join
+        #this way when user summarizes no duplicates occur
+        return Notes.query.outerjoin(Notes_Summary,Notes.notes_id==Notes_Summary.from_notes_id
+                                     ).filter(Notes.user_id==user_id
+                                    ).filter(Notes_Summary.summary_id==None).limit(20).all()    #set limit 20 to prevent looking at all notes
+        
 
 
 
@@ -71,5 +85,21 @@ class StudyGroup(db.Model):
     group_name = db.Column(db.String(255),nullable=False)
     created_by = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False)
     time_created =  db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
+
+    def create_group(group_name,created_by_id):
+        #create study group object and store in the database
+        study_group = StudyGroup(group_name=group_name,created_by=created_by_id)
+        db.session.add(study_group)
+        db.session.commit()
+    
+
+
+class StudyGroupMember(db.Model):
+    __tablename__ = "study_group_members"
+    id = db.Column(db.Integer,primary_key=True)
+    group_id = db.Column(db.Integer,db.ForeignKey("study_groups.group_id"),nullable=False)
+    group_member_id = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False)
+    joined_at =  db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
+    
 
 

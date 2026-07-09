@@ -33,14 +33,16 @@ login_manager.init_app(app)  # bind object to this app
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# @login_manager.user_loader       #loads User object into flask app.
-# def load_user(user_id):
-#     return db.session.get(User,int(user_id))
+
+
 
 @app.route("/")
 def home():
     # renders the index.html file from the templates folder
     return render_template('index.html')
+
+
+
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -61,6 +63,9 @@ def register():
         return redirect(url_for('home')) # if so - send to home page
     return render_template('register.html', title='Register', form=form)
 
+
+
+
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -75,11 +80,15 @@ def login():
 
     return render_template('login.html', title='Sign In', form=form)
 
+
+
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('home'))
+
+
 
 @app.route("/upload", methods=['POST'])
 def upload():
@@ -99,15 +108,19 @@ def upload():
 
 
 @app.route("/api/summarize", methods=['POST'])
+#bug needs to read the actual content of each note
 def summarize():
     if not current_user.is_authenticated:
         return {'error': 'User not logged in'}, 401
 
-    notes = Notes.query.filter_by(user_id=current_user.user_id).all()  # fetch all notes for this user
+    notes = Notes.query.filter_by(user_id=current_user.user_id).all()  # fetch all unsummarized_notes for this user
     if not notes:
         return {'error': 'No notes found to summarize'}, 400
 
-    notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
+    note_summaries = []
+    for note in notes:
+        note_summarized = 
+    #notes_text = [note.note_name for note in notes]
     result = generate_summary(notes_text)
 
     if not result.get('success'):
