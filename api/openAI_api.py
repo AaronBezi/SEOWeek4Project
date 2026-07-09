@@ -14,7 +14,7 @@ def extract_text(note):
     return file_bytes,file_name
 
 
-def generate_sumary(note):
+def generate_summary(note):
     if not note:
         return {"status": False, "error": "No notes found."}
 
