@@ -59,7 +59,9 @@ def register():
                     password = hashed_password)
         db.session.add(user) #add user into database
         db.session.commit()  #save changes to database
+        login_user(user)  # logins the user so they don't need to log in after signup. 
         flash(f'Account created for {form.username.data}!', 'success')
+        
         return redirect(url_for('home')) # if so - send to home page
     return render_template('register.html', title='Register', form=form)
 
