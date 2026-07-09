@@ -5,24 +5,29 @@ from database.models import User,Notes,Notes_Summary
 
 
 #Circle back to this later to fix issue with testing database functions.
-# class TestAddSummary:
-#     def test_add_summary_regular(self,db):
-#         #add summary on none-existing summary
-#         user = User(username="cailan",email="cailan@gmail.com", password="secret")
-#         db.session.add(user)
-#         db.session.commit()
+class TestAddSummary:
+    def test_add_summary_regular(self,db):
+        try:
+            #add summary on none-existing summary
+            user = User(username="cailan",email="cailan@gmail.com", password="secret")
+            db.session.add(user)
+            db.session.commit()
 
-#         note = Notes(user_id = user.user_id,note_name="calculus.pdf",file_path="/school/calculus.pdf")
-#         db.session.add(note)
-#         db.session.commit()
-        
-#         summary = Notes_Summary.add_summary(note.notes_id,user.user_id,"Testing some text for coding project")
-        
-#         assert summary is not None, "Summary returned should not be empty"
-#         assert summary.from_notes_id == note.notes_id, "Note_id should match"
-#         assert summary.from_user_id == user.user_id, "user_ids should match"
-#         assert summary.summary_text == "Testing some text for coding project", "Text generated should match"
-    
+            note = Notes(user_id = user.user_id,note_name="calculus.pdf",file_path="/school/calculus.pdf")
+            db.session.add(note)
+            db.session.commit()
+            
+            summary = Notes_Summary.add_summary(note.notes_id,user.user_id,"Testing some text for coding project")
+            
+            assert summary is not None, "Summary returned should not be empty"
+            assert summary.from_notes_id == note.notes_id, "Note_id should match"
+            assert summary.from_user_id == user.user_id, "user_ids should match"
+            assert summary.summary_text == "Testing some text for coding project", "Text generated should match"
+        finally:
+            db.session.delete(summary)
+            db.session.delete(note)
+            db.session.delete(user)
+            db.session.commit()
 
   
     
