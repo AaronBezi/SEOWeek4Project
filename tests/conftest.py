@@ -32,5 +32,5 @@ def client(app):
 
 
 @pytest.fixture
-def db(_app):
+def db(app):
     return _db

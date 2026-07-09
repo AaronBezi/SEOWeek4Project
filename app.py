@@ -33,14 +33,16 @@ login_manager.init_app(app)  # bind object to this app
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# @login_manager.user_loader       #loads User object into flask app.
-# def load_user(user_id):
-#     return db.session.get(User,int(user_id))
+
+
 
 @app.route("/")
 def home():
     # renders the index.html file from the templates folder
     return render_template('index.html')
+
+
+
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -61,6 +63,9 @@ def register():
         return redirect(url_for('home')) # if so - send to home page
     return render_template('register.html', title='Register', form=form)
 
+
+
+
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -75,11 +80,15 @@ def login():
 
     return render_template('login.html', title='Sign In', form=form)
 
+
+
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('home'))
+
+
 
 @app.route("/upload", methods=['POST'])
 def upload():
@@ -159,22 +168,28 @@ def join_pool_action(pool_id):
     return redirect(url_for('pool_space', pool_id=pool_id))
 
 @app.route("/api/summarize", methods=['POST'])
+#bug needs to read the actual content of each note
 def summarize():
     if not current_user.is_authenticated:
         return {'error': 'User not logged in'}, 401
 
-    notes = Notes.query.filter_by(user_id=current_user.user_id).all()  # fetch all notes for this user
+    notes = Notes.query.filter_by(user_id=current_user.user_id).all()  # fetch all unsummarized_notes for this user
     if not notes:
         return {'error': 'No notes found to summarize'}, 400
 
-    notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
-    result = generate_summary(notes_text)
-
-    if not result.get('success'):
-        return {'error': result.get('error', 'Could not generate summary')}, 500
-
-    return {'success': True, 'summary': result['summary']}, 200
-
+    #generates summary for each note appending it to a format string to return in the end
+    summaries = []
+    
+    for note in notes:
+        result = generate_summary(note)
+        if not result.get('success'):
+            return {"success": False,'error': result.get('error', 'Could not generate summary')}, 500
+        summaries.append({"note_name":note.note_name, "summary": result['summary']})
+    
+    return {"success": True, "summary": summaries},200
+    # notes_text = [note.note_name for note in notes]
+    # result = generate_summary(notes_text)
+    
 
 @app.route("/update_server", methods=['POST'])
 def webhook():

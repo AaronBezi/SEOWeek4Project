@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from api.openAI_api import generate_summary
+from database.models import Notes,User
 
 
 class TestSummarizeText:
@@ -55,3 +56,14 @@ class TestSummarizeText:
 
             assert result["success"] is False
             assert "Could not generate summary" in result["error"]
+
+
+#Circle back later once better idea on testing database functions.
+# class TestGetNoteFile:
+#     def test_get_note_file(self,db):
+#         user = User(username="hello",email="hello@gmail.com",password="identity")
+#         note = Notes(user_id=user.user_id,note_name="Algebra.pdf",file_path="/lecture/algebra.pdf")
+#         db.session.add(user)
+#         db.session.add(note)
+#         db.session.commit()
+
