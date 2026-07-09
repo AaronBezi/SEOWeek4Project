@@ -102,30 +102,6 @@ class TestUploadNotes:
         response = client.post('/upload', data=data, content_type='multipart/form-data')
         assert response.status_code == 400
 
-
-class TestGroups:
-    # waiting on Diego to add /groups routes
-    def test_get_groups_returns_list(self, client):
-        # GET /groups and assert the response is a JSON list
-        pass
-
-    def test_create_group_returns_201(self, client):
-        # POST to /groups with {group_name, created_by (user_id)} and assert 201 with a group_id
-        pass
-
-    def test_create_group_missing_fields_returns_400(self, client):
-        # POST to /groups without group_name or created_by and assert a 400 response
-        pass
-
-    def test_get_group_by_id_returns_group(self, client):
-        # create a group then GET /groups/<group_id> and assert group_name matches
-        pass
-
-    def test_get_nonexistent_group_returns_404(self, client):
-        # GET /groups/9999 for a group that does not exist and assert a 404 response
-        pass
-
-
 class TestSummarizeRoute:
     def test_summarize_unauthenticated_returns_401(self, client):
         response = client.post('/api/summarize')
