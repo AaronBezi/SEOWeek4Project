@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from api.openAI_api import generate_summary
 from database.models import Notes,User
+from types import SimpleNamespace
 
 
 class TestSummarizeText:
@@ -58,12 +59,33 @@ class TestSummarizeText:
             assert "Could not generate summary" in result["error"]
 
 
-#Circle back later once better idea on testing database functions.
-# class TestGetNoteFile:
-#     def test_get_note_file(self,db):
-#         user = User(username="hello",email="hello@gmail.com",password="identity")
-#         note = Notes(user_id=user.user_id,note_name="Algebra.pdf",file_path="/lecture/algebra.pdf")
-#         db.session.add(user)
-#         db.session.add(note)
-#         db.session.commit()
+
+#new summary test with new api changes with file implementation
+class TestGenSummaryNew:
+    def test_generate_summary(mock_supabase,mock_openai):
+        with patch("storage.supabase") as mock_supabase,\
+            patch("api.openAI_api.OpenAI") as mock_openai:
+
+            mock_supabase.storage.from_.return_value.download.return_value = b"%PDF MOCK PDF BYTES"
+
+            #fake open ai upload
+            mock_uploaded_file = MagicMock()
+            mock_uploaded_file.id = "file_namefake"
+            mock_openai.files.create.return_value = mock_uploaded_file
+
+            #Fake openai response
+            mock_response = MagicMock()
+            mock_response.output_text = "TESTING FAKE SUMMARY PLEASE WORK"
+            mock_openai.responses.create.return_value = mock_response
+
+            #generate fake note object
+            fake_note = SimpleNamespace(file_path="lectures/calc.pdf")
+            result = generate_summary(fake_note)
+
+            print("\n--- Test 1 Result Output ---")
+            print(result)
+
+            assert result == "TESTING FAKE SUMMARY PLEASE WORK"
+
+
 
