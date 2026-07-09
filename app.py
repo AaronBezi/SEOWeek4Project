@@ -117,16 +117,21 @@ def summarize():
     if not notes:
         return {'error': 'No notes found to summarize'}, 400
 
-    note_summaries = []
+    #generates summary for each note appending it to a format string to return in the end
+    summaries = []
+    
     for note in notes:
-        note_summarized = 
-    #notes_text = [note.note_name for note in notes]
-    result = generate_summary(notes_text)
+        result = generate_summary(note)
+        if not result.get('success'):
+            return {"success": False,'error': result.get('error', 'Could not generate summary')}, 500
+        summaries.append({"note_name":note.note_name, "summary": result['summary']})
+    
+    return {"success": True, "summary": summaries},200
+    # notes_text = [note.note_name for note in notes]
+    # result = generate_summary(notes_text)
+    
 
-    if not result.get('success'):
-        return {'error': result.get('error', 'Could not generate summary')}, 500
-
-    return {'summary': result['summary']}, 200
+    # return {'summary': result['summary']}, 200
 
 
 @app.route("/update_server", methods=['POST'])

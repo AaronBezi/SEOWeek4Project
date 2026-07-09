@@ -75,7 +75,7 @@ class Notes_Summary(db.Model):
                                      ).filter(Notes.user_id==user_id
                                     ).filter(Notes_Summary.summary_id==None).limit(20).all()    #set limit 20 to prevent looking at all notes
         
-
+    
 
 
 #StudyGroup Scehema
