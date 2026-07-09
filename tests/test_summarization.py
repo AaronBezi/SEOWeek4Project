@@ -107,11 +107,21 @@ class TestSummarizationNew:
             result = generate_summary(note)
             
             print("\n---Generate summary test 3--")
+            print(result["error"])
             assert result['success'] == True
             assert result['summary'] == "SUMMARY GENERATED HOORAY"
             mock_client_instance.chat.completions.create.assert_called_once_with(
+                model="gpt-4o-mini",
+            temperature = 0.2,
+            messages = [
+                {"role": "system",
+                "content": "Summarize the following docuemnt, with no hallucianations and only user information inthe actual document"
+                },
                 
-            )
+                {"role": "user", "content": "DUMMY TEXT EXTARCTED TEXT"}
+            ]
+        )
+            
 
             
         
