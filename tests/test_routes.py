@@ -74,18 +74,30 @@ class TestLogin:
 
 
 class TestUploadNotes:
+    def test_upload_unauthenticated_returns_401(self, client):
+        data = {'file': (BytesIO(b'hello world'), 'notes.pdf')}
+        response = client.post('/upload', data=data, content_type='multipart/form-data')
+        assert response.status_code == 401
+
     def test_upload_valid_file_returns_200(self, client, monkeypatch):
-        monkeypatch.setattr('app.upload_note_file', lambda file: 'fake-note-id')
+        monkeypatch.setattr('app.upload_note_file', lambda file: ('fake-storage-id', 'fake/path.pdf'))
+        monkeypatch.setattr('app.Notes.create_Note', lambda id, name, path: None)
+        register_user(client)
+        login_user_via_form(client)
         data = {'file': (BytesIO(b'hello world'), 'notes.pdf')}
         response = client.post('/upload', data=data, content_type='multipart/form-data')
         assert response.status_code == 200
-        assert response.get_json()['note_id'] == 'fake-note-id'
+        assert response.get_json()['storage_note_id'] == 'fake-storage-id'
 
     def test_upload_missing_file_returns_400(self, client):
+        register_user(client)
+        login_user_via_form(client)
         response = client.post('/upload', data={}, content_type='multipart/form-data')
         assert response.status_code == 400
 
     def test_upload_unsupported_format_returns_400(self, client):
+        register_user(client)
+        login_user_via_form(client)
         data = {'file': (BytesIO(b'hello'), 'notes.exe')}
         response = client.post('/upload', data=data, content_type='multipart/form-data')
         assert response.status_code == 400
