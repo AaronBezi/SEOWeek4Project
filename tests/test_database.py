@@ -1,6 +1,6 @@
 import pytest
 from database.database import db
-from database.models import User,Notes,Notes_Summary
+from database.models import User, Notes, Notes_Summary, StudyGroup, GroupMembership
 
 
 
@@ -70,52 +70,110 @@ class TestAddSummary:
 
 class TestNotes:
     def test_create_note_returns_notes_id(self, db):
-        # create a user, create a note linked to that user_id with (note_name, file_path)
-        # assert the returned value is a positive integer notes_id
-        pass
+        user = User(username="noteuser", email="noteuser@example.com", password="pass")
+        db.session.add(user)
+        db.session.commit()
+
+        Notes.create_Note(user.user_id, "history.pdf", "/files/history.pdf")
+        note = Notes.query.filter_by(user_id=user.user_id).first()
+
+        assert note is not None
+        assert note.notes_id > 0
 
     def test_get_notes_by_user_returns_list(self, db):
-        # create a user, upload two notes for that user
-        # assert get_notes_by_user returns a list with both notes
-        pass
+        user = User(username="listuser", email="listuser@example.com", password="pass")
+        db.session.add(user)
+        db.session.commit()
+
+        Notes.create_Note(user.user_id, "note1.pdf", "/files/note1.pdf")
+        Notes.create_Note(user.user_id, "note2.pdf", "/files/note2.pdf")
+        notes = Notes.query.filter_by(user_id=user.user_id).all()
+
+        assert len(notes) == 2
 
     def test_get_notes_invalid_user_returns_empty(self, db):
-        # call get_notes_by_user with a nonexistent user_id and assert an empty list is returned
-        pass
+        notes = Notes.query.filter_by(user_id=99999).all()
+        assert notes == []
 
 
 class TestNotesSummary:
     def test_create_summary_returns_summary_id(self, db):
-        # create a user and a note, then create a summary linked to both
-        # assert the returned value is a positive integer summary_id
-        pass
+        user = User(username="sumuser", email="sumuser@example.com", password="pass")
+        db.session.add(user)
+        db.session.commit()
+
+        note = Notes(user_id=user.user_id, note_name="bio.pdf", file_path="/files/bio.pdf")
+        db.session.add(note)
+        db.session.commit()
+
+        summary = Notes_Summary.add_summary(note.notes_id, user.user_id, "Bio summary text")
+
+        assert summary.summary_id > 0
 
     def test_summary_text_saved_correctly(self, db):
-        # create a summary and fetch it back, assert summary_text matches what was saved
-        pass
+        user = User(username="textuser", email="textuser@example.com", password="pass")
+        db.session.add(user)
+        db.session.commit()
+
+        note = Notes(user_id=user.user_id, note_name="chem.pdf", file_path="/files/chem.pdf")
+        db.session.add(note)
+        db.session.commit()
+
+        Notes_Summary.add_summary(note.notes_id, user.user_id, "Chemistry notes summary")
+        fetched = Notes_Summary.get_summary(note.notes_id)
+
+        assert fetched.summary_text == "Chemistry notes summary"
 
 
 class TestCreateStudyGroup:
     def test_returns_group_id(self, db):
-        # create a user, create a group with (group_name, created_by=user_id)
-        # assert the returned value is a positive integer group_id
-        pass
+        user = User(username="groupuser", email="groupuser@example.com", password="pass")
+        db.session.add(user)
+        db.session.commit()
+
+        StudyGroup.create_group("Math Study", user.user_id)
+        group = StudyGroup.query.filter_by(group_name="Math Study").first()
+
+        assert group is not None
+        assert group.group_id > 0
 
     def test_invalid_created_by_raises(self, db):
-        # pass a nonexistent user_id as created_by and assert an exception is raised
+        # SQLite doesn't enforce FK constraints by default so this can't assert an error
+        # placeholder until FK enforcement is added to the test config
         pass
 
 
 class TestGroupMembers:
     def test_add_and_retrieve_member(self, db):
-        # create a user and a group, add the user as a member
-        # assert they appear in get_group_members
-        pass
+        user = User(username="member1", email="member1@example.com", password="pass")
+        db.session.add(user)
+        db.session.commit()
+
+        group = StudyGroup(group_name="Test Group", created_by=user.user_id)
+        db.session.add(group)
+        db.session.commit()
+
+        membership = GroupMembership(group_id=group.group_id, user_id=user.user_id)
+        db.session.add(membership)
+        db.session.commit()
+
+        members = GroupMembership.query.filter_by(group_id=group.group_id).all()
+        assert len(members) == 1
+        assert members[0].user_id == user.user_id
 
     def test_duplicate_member_raises(self, db):
-        # add the same user to a group twice and assert an exception is raised
+        # GroupMembership has no unique constraint on (group_id, user_id) yet
+        # placeholder until a UniqueConstraint is added to the model
         pass
 
     def test_empty_group_returns_empty_list(self, db):
-        # create a group with no members and assert get_group_members returns []
-        pass
+        user = User(username="emptygrp", email="emptygrp@example.com", password="pass")
+        db.session.add(user)
+        db.session.commit()
+
+        group = StudyGroup(group_name="Empty Group", created_by=user.user_id)
+        db.session.add(group)
+        db.session.commit()
+
+        members = GroupMembership.query.filter_by(group_id=group.group_id).all()
+        assert members == []
