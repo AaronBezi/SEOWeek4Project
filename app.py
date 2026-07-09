@@ -179,6 +179,7 @@ def join_pool_action(pool_id):
 
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
+    #query the users notes and summarize them one by one displaying them to the screen
     if not current_user.is_authenticated:
         return {'error': 'User not logged in'}, 401
 
@@ -186,13 +187,24 @@ def summarize():
     if not notes:
         return {'error': 'No notes found to summarize'}, 400
 
-    notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
-    result = generate_summary(notes_text)
+    summaries = []
+    
+    for note in notes:
+        result = generate_summary(note)
+        if not result.get('success'):
+            return {"success": False,'error': result.get('error', 'Could not generate summary')}, 500
+        summaries.append({"note_name":note.note_name, "summary": result['summary']})
+    
+    return {"success": True, "summary": summaries},200
+    # notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
 
-    if not result.get('success'):
-        return {'error': result.get('error', 'Could not generate summary')}, 500
+    # if not result.get('success'):
+    #     return {'error': result.get('error', 'Could not generate summary')}, 500
 
-    return {'success': True, 'summary': result['summary']}, 200
+    # return {'success': True, 'summary': result['summary']}, 200
+
+
+
 
 
 @app.route("/update_server", methods=['POST'])
