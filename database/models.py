@@ -60,11 +60,12 @@ class Notes_Summary(db.Model):
     def add_summary(from_note_id,user_id,text):
         #Creates summary object if doesnt exist already, otherwise returns generated summary for corresponding note
         curr_summary = Notes_Summary.get_summary(from_note_id)
-        
+
         if curr_summary:
             return curr_summary
 
-        new_summary = Notes_Summary(from_notes_id=from_note_id,from_user_id=user_id,summary_text=text)
+        note = Notes.query.get(from_note_id)
+        new_summary = Notes_Summary(from_notes_id=from_note_id,from_user_id=user_id,note_name=note.note_name,summary_text=text)
         db.session.add(new_summary)
         db.session.commit()
         return new_summary
