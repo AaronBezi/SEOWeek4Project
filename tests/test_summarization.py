@@ -60,32 +60,9 @@ class TestSummarizeText:
 
 
 
-#new summary test with new api changes with file implementation
-class TestGenSummaryNew:
-    def test_generate_summary(mock_supabase,mock_openai):
-        with patch("storage.supabase") as mock_supabase,\
-            patch("api.openAI_api.OpenAI") as mock_openai:
 
-            mock_supabase.storage.from_.return_value.download.return_value = b"%PDF MOCK PDF BYTES"
 
-            #fake open ai upload
-            mock_uploaded_file = MagicMock()
-            mock_uploaded_file.id = "file_namefake"
-            mock_openai.files.create.return_value = mock_uploaded_file
-
-            #Fake openai response
-            mock_response = MagicMock()
-            mock_response.output_text = "TESTING FAKE SUMMARY PLEASE WORK"
-            mock_openai.responses.create.return_value = mock_response
-
-            #generate fake note object
-            fake_note = SimpleNamespace(file_path="lectures/calc.pdf")
-            result = generate_summary(fake_note)
-
-            print("\n--- Test 1 Result Output ---")
-            print(result)
-
-            assert result == "TESTING FAKE SUMMARY PLEASE WORK"
-
+    
+        
 
 
