@@ -32,7 +32,9 @@
                 <h2>Shared Notes</h2>
                 <div class="notes-grid">
                     {% for note in notes %}
-                        <div class="note-card">{{ note.note_name }}</div>
+                    {% if note.file_path %}
+                        <a class="note-card" href="{{ note_urls[note.notes_id] }}" target="_blank">{{ note.note_name }}</a>
+                    {% endif %}
                     {% else %}
                         <p class="placeholder-text">No notes shared here yet. Be the first to upload one!</p>
                     {% endfor %}
