@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Study Pool</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div id="pool-space-view" class="view active">
+        <header>
+            <div class="logo" onclick="window.location.href='{{ url_for('home') }}'">STUDY POOL</div>
+            <div class="pool-title">{{ pool.group_name }}</div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="workspace-container">
+            <main class="notes-section">
+                <h2>Shared Notes</h2>
+                <div class="notes-grid">
+                    {% for note in notes %}
+                        <div class="note-card">{{ note.note_name }}</div>
+                    {% else %}
+                        <p class="placeholder-text">No notes shared here yet. Be the first to upload one!</p>
+                    {% endfor %}
+                </div>
+
+                <h2>Members</h2>
+                <ul class="member-list">
+                    {% for member in members %}
+                        <li>{{ member.username }}</li>
+                    {% endfor %}
+                </ul>
+            </main>
+
+            <input type="file" id="file-input" style="display:none"
+                   accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+                   data-pool-id="{{ pool.group_id }}">
+
+            <div class="action-stack">
+                <button class="task-btn" id="upload-btn">
+                    <span class="btn-icon">+</span>
+                    <span class="btn-text">Upload Doc</span>
+                </button>
+            </div>
+        </div>
+
+        <a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>

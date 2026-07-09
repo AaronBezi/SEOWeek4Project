@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Study Pool</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div id="my-notes-view" class="view active">
+        <header>
+            <div class="logo" onclick="window.location.href='{{ url_for('home') }}'">STUDY POOL</div>
+
+            <div class="menu-dropdown">
+                <button class="menu-trigger" onclick="toggleDropdown()" aria-label="Open Menu">
+                    <span class="three-dots"></span>
+                </button>
+                <div id="myDropdown" class="dropdown-content">
+                    <a href="{{ url_for('home') }}">Home</a>
+                    <a href="{{ url_for('create_pool') }}">Create Pool</a>
+                    <a href="{{ url_for('join_pool') }}">Join a Different Pool</a>
+                    {% for pool in my_pools %}
+                        <a href="{{ url_for('pool_space', pool_id=pool.group_id) }}">{{ pool.group_name }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="workspace-container">
+            <main class="notes-section">
+                <h2>Your Notes</h2>
+                <div class="notes-grid" id="notes-content">
+                    {% for note in notes %}
+                        <div class="note-card">{{ note.note_name }}</div>
+                    {% else %}
+                        <p class="placeholder-text">No personal notes yet. Upload one to get started!</p>
+                    {% endfor %}
+                </div>
+                <div id="summary-content" style="display:none;"></div>
+            </main>
+
+            <input type="file" id="file-input" style="display:none"
+                   accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg">
+
+            <div class="action-stack">
+                <button class="task-btn" id="upload-btn">
+                    <span class="btn-icon">+</span>
+                    <span class="btn-text">Upload Doc</span>
+                </button>
+                <button class="task-btn summary-btn" id="summarize-btn">
+                    <span class="btn-icon">☰</span>
+                    <span class="btn-text">Summarize Notes</span>
+                </button>
+            </div>
+        </div>
+
+        <footer>
+            &copy; 2026 Study Pool
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>

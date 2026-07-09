@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Study Pool</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div id="join-pool-view" class="view active">
+        <header>
+            <div class="logo" onclick="window.location.href='{{ url_for('home') }}'">STUDY POOL</div>
+            <div class="pool-title">Browse Pools</div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="workspace-container">
+            <main class="notes-section">
+                <h2>Available Pools</h2>
+                <div class="pool-list">
+                    {% for pool, creator_username in pools %}
+                        <div class="pool-list-row">
+                            <div class="pool-list-info">
+                                <span class="pool-list-name">{{ pool.group_name }}</span>
+                                <span class="pool-list-creator">Created by {{ creator_username }}</span>
+                            </div>
+                            {% if pool.group_id in my_membership_ids %}
+                                <a class="capsule-btn pool-list-btn" href="{{ url_for('pool_space', pool_id=pool.group_id) }}">View</a>
+                            {% else %}
+                                <form method="POST" action="{{ url_for('join_pool_action', pool_id=pool.group_id) }}">
+                                    <button type="submit" class="capsule-btn pool-list-btn">Join</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="placeholder-text">No pools yet. Be the first to create one!</p>
+                    {% endfor %}
+                </div>
+            </main>
+        </div>
+
+        <a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
+    </div>
+</body>
+</html>

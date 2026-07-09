@@ -81,7 +81,7 @@ class TestUploadNotes:
 
     def test_upload_valid_file_returns_200(self, client, monkeypatch):
         monkeypatch.setattr('app.upload_note_file', lambda file: ('fake-storage-id', 'fake/path.pdf'))
-        monkeypatch.setattr('app.Notes.create_Note', lambda id, name, path: None)
+        monkeypatch.setattr('app.Notes.create_Note', lambda id, name, path, group_id=None: None)
         register_user(client)
         login_user_via_form(client)
         data = {'file': (BytesIO(b'hello world'), 'notes.pdf')}

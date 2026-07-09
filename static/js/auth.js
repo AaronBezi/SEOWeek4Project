@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const formData = new FormData();
             formData.append('file', file);
+            const poolId = fileInput.dataset.poolId;
+            if (poolId) {
+                formData.append('group_id', poolId);
+            }
 
             uploadBtn.disabled = true;
             uploadBtn.querySelector('.btn-text').textContent = 'Uploading...';

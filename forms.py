@@ -17,3 +17,8 @@ class LoginForm(FlaskForm):
                         validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Sign In')
+
+class CreatePoolForm(FlaskForm):
+    group_name = StringField('Pool Name',
+                             validators=[DataRequired(), Length(min=2, max=50)])
+    submit = SubmitField('Create Pool')

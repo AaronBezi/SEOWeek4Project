@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Study Pool</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div id="create-pool-view" class="view active">
+        <div class="auth-card">
+            <h1 class="brand-title auth-title">Study Pool</h1>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+
+                <div class="form-group">
+                    {{ form.group_name.label(class="form-label") }}
+                    {{ form.group_name(class="text-input" + (" input-invalid" if form.group_name.errors else "")) }}
+                    {% for error in form.group_name.errors %}
+                        <span class="field-error">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                
+                {{ form.submit(class="capsule-btn auth-submit") }}
+            </form>
+
+            <a class="auth-switch-link" href="{{ url_for('join_pool') }}">Looking for an existing pool? Join here.</a>
+            <a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
+        </div>
+    </div>
+</body>
+</html>
