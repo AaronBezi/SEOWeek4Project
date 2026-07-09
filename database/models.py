@@ -36,7 +36,7 @@ class Notes(db.Model):
         db.session.commit()
     
     def get_Note(user_id):
-        pass
+        return Notes.query.filter_by(user_id=user_id).first()
 
 
 
@@ -68,8 +68,7 @@ class Notes_Summary(db.Model):
         db.session.add(new_summary)
         db.session.commit()
         return new_summary
-    def add_summary(from_notes_id,from_user_id,note_name,summary_text):
-        pass
+    
 
 
     def get_unsummarized_notes(user_id):
@@ -82,19 +81,19 @@ class Notes_Summary(db.Model):
     
 
 
-#StudyGroup Scehema
-class StudyGroup(db.Model):
-    __tablename__ = "study_groups"
-    group_id = db.Column(db.Integer,primary_key=True)
-    group_name = db.Column(db.String(255),nullable=False)
-    created_by = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False)
-    time_created =  db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
+# #StudyGroup Scehema(not being used anymore)
+# class StudyGroup(db.Model):
+#     __tablename__ = "study_groups"
+#     group_id = db.Column(db.Integer,primary_key=True)
+#     group_name = db.Column(db.String(255),nullable=False)
+#     created_by = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False)
+#     time_created =  db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
 
-    def create_group(group_name,created_by_id):
-        #create study group object and store in the database
-        study_group = StudyGroup(group_name=group_name,created_by=created_by_id)
-        db.session.add(study_group)
-        db.session.commit()
+#     def create_group(group_name,created_by_id):
+#         #create study group object and store in the database
+#         study_group = StudyGroup(group_name=group_name,created_by=created_by_id)
+#         db.session.add(study_group)
+#         db.session.commit()
     
 
 
