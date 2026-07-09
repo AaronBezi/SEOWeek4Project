@@ -1,38 +1,56 @@
 import pytest
-from database.database import (  # functions to be added by Cailan
-    create_user,
-    get_user_by_email,
-    create_note,
-    get_notes_by_user,
-    create_study_group,
-    add_member_to_group,
-    get_group_members,
-    create_summary,
-)
+from database.database import db
+from database.database import User,Notes,Notes_Summary
 
 
-class TestCreateUser:
-    def test_returns_user_id(self, db):
-        # create a user with (username, email, password) and assert the returned value is a positive integer user_id
-        pass
 
-    def test_duplicate_email_raises(self, db):
-        # create two users with the same email and assert an exception is raised
-        pass
+class TestGetSummary:
+    def test_add_summary_regular(self,db):
+        #add summary on none-existing summary
+        user = User(username="cailan",email="cailan@gmail.com", password="secret")
+        db.session.add(user)
+        db.session.commit()
 
-    def test_duplicate_username_raises(self, db):
-        # create two users with the same username and assert an exception is raised
-        pass
+        note = Notes(user_id = user.user_id,note_name="calculus.pdf",file_path="/school/calculus.pdf")
+        
+        summary = Notes_Summary.get_summary(note.note_id,user.user_id,"Testing some text for coding project")
+        
+    
 
 
-class TestGetUserByEmail:
-    def test_returns_user(self, db):
-        # create a user, look them up by email, assert user.username matches
-        pass
+        
 
-    def test_missing_email_returns_none(self, db):
-        # look up an email that was never inserted and assert None is returned
-        pass
+
+        
+
+
+
+
+
+
+##NOT IMPLEMENTED AS FUNCTIONS IMBEDDED IN REGISTER ROUTE
+# class TestCreateUser:
+#     def test_returns_user_id(self, db):
+#         # create a user with (username, email, password) and assert the returned value is a positive integer user_id
+#         pass
+
+#     def test_duplicate_email_raises(self, db):
+#         # create two users with the same email and assert an exception is raised
+#         pass
+
+#     def test_duplicate_username_raises(self, db):
+#         # create two users with the same username and assert an exception is raised
+#         pass
+
+
+# class TestGetUserByEmail:
+#     def test_returns_user(self, db):
+#         # create a user, look them up by email, assert user.username matches
+#         pass
+
+#     def test_missing_email_returns_none(self, db):
+#         # look up an email that was never inserted and assert None is returned
+#         pass
 
 
 class TestNotes:
