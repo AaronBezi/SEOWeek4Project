@@ -99,6 +99,14 @@ def upload():
     Notes.create_Note(current_user.user_id,file.filename,filepath,group_id)      #saves note to database
     return {'storage_note_id': storage_note_id}, 200
 
+@app.route("/my_notes")
+@login_required
+def my_notes():
+    notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
+    my_pools = StudyGroup.query.join(GroupMembership, StudyGroup.group_id == GroupMembership.group_id) \
+                                .filter(GroupMembership.user_id == current_user.user_id).all()
+    return render_template('my_notes.html', title='My Notes', notes=notes, my_pools=my_pools)
+
 @app.route("/create_pool", methods=['POST', 'GET'])
 @login_required
 def create_pool():
