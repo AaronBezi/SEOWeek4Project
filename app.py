@@ -2,8 +2,8 @@ from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_behind_proxy import FlaskBehindProxy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from forms import RegistrationForm, LoginForm
-from database.models import User,Notes,Notes_Summary
+from forms import RegistrationForm, LoginForm, CreatePoolForm
+from database.models import User,Notes,Notes_Summary, StudyGroup, GroupMembership
 from database.database import db
 from storage import allowed_file, upload_note_file
 from api.openAI_api import generate_summary
@@ -97,6 +97,23 @@ def upload():
     Notes.create_Note(current_user.user_id,file.filename,filepath)      #saves note to database
     return {'storage_note_id': storage_note_id}, 200
 
+@app.route("/create_pool", methods=['POST', 'GET'])
+@login_required
+def create_pool():
+    form = CreatePoolForm()
+    if form.validate_on_submit(): # checks if entries are valid
+        pool = StudyGroup(group_name=form.group_name.data, created_by=current_user.user_id)
+        db.session.add(pool)
+        db.session.commit()  # commit so pool.group_id actually gets assigned. 
+
+        membership = GroupMembership(group_id=pool.group_id, user_id=current_user.user_id)
+        db.session.add(membership)
+        db.session.commit()
+
+        flash(f'Pool "{pool.group_name}" created!', 'success')
+        return redirect(url_for('pool_space', pool_id=pool.group_id)) # if so - send to pool space.
+    return render_template('create_pool.html', title='Create Pool', form=form)
+    
 
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
