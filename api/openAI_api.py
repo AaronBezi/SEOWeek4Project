@@ -1,61 +1,66 @@
 import os
+import io
+from markitdown import MarkItDown
 from dotenv import load_dotenv
 from openai import OpenAI
 from storage import get_supabase
 
 load_dotenv()
-client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 supabase = get_supabase()
+client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+md = MarkItDown()
 
-def extract_text(note):
-    #get raw file bytes from supabase storage so openai api key can understand the format
-    file_bytes = supabase.storage.from_("notes").download(note.file_path)
-    file_name = note.file_path.split("/")[-1]
-    return file_bytes,file_name
+def download_file(note):
+    #downloads file from supabase storage
+    ext = note.file_path.rsplit(".",1)[-1].lower()
+    return supabase.storage.from_("notes").download(note.file_path),ext
+
+
+def extract_text(file,extension):
+    #read file returned from supabase and get the text with markdown
+    result = md.convert_stream(io.BytesIO(file),file_extension=f".{extension}")
+    return result.text_content
+
 
 
 def generate_summary(note):
+    #combines both functions and promots open ai to summarize the docuement/
     if not note:
         return {"status": False, "error": "No notes found."}
 
-    #upload OpenAI's files API
+    file_bytes,ext= download_file(note)
+    text = extract_text(file_bytes,ext)
     try:
-        file_bytes,file_name = extract_text(note)
-        uploaded_file = client.files.create(file=(file_name,file_bytes),purpose="user_data")
-
-        #Model summarization
-        response = client.responses.create(
-            model="gpt-4.1",
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
             temperature = 0.2,
-            input=[
-                {"role":"user",
-                "content":[
-                    {"type":"input_file",
-                     "file_id": uploaded_file.id
-                    },
-                        
-                    {"type": "input_text",
-                     "text": "Summarize this document, using only the content in the document"
-                     "do not imagine or infer anything about the content, only correct notes if they are wrong"},
-                ],
-                }],
+            messages = [
+                {"role": "system",
+                "content": "Summarize the following docuemnt, with no hallucianations and only user information inthe actual document"
+                },
+                
+                {"role": "user", "content": text}
+            ]
         )
-        return {"success": True, 'summary': response.output_text}
-    except Exception:
-        return {"success": False, "error": "Could not generate summary right now."}
+        return {"success": True, "summary": response.choices[0].message.content}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
-
-
-        
-    
     
 
 
 
 
 
-# def generate_summary(notes_list):
+
+
+
+
+
+#def generate_summary(notes_list):
+#     client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 
 #     if not notes_list:
 #         return {"status": False, "error": "No notes found."}
