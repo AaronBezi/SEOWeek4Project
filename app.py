@@ -173,7 +173,7 @@ def summarize():
     if not result.get('success'):
         return {'error': result.get('error', 'Could not generate summary')}, 500
 
-    return {'summary': result['summary']}, 200
+    return {'success': True, 'summary': result['summary']}, 200
 
 
 @app.route("/update_server", methods=['POST'])
