@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from forms import RegistrationForm, LoginForm, CreatePoolForm
 from database.models import User,Notes,Notes_Summary, StudyGroup, GroupMembership
 from database.database import db
-from storage import allowed_file, upload_note_file
+from storage import allowed_file, upload_note_file, get_note_file
 from api.openAI_api import generate_summary
 import git
 import os
@@ -37,10 +37,12 @@ def load_user(user_id):
 # def load_user(user_id):
 #     return db.session.get(User,int(user_id))
 
+
 @app.route("/")
 def home():
     # renders the index.html file from the templates folder
     return render_template('index.html')
+
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -61,6 +63,7 @@ def register():
         return redirect(url_for('home')) # if so - send to home page
     return render_template('register.html', title='Register', form=form)
 
+
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -75,11 +78,13 @@ def login():
 
     return render_template('login.html', title='Sign In', form=form)
 
+
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('home'))
+
 
 @app.route("/upload", methods=['POST'])
 def upload():
@@ -99,13 +104,18 @@ def upload():
     Notes.create_Note(current_user.user_id,file.filename,filepath,group_id)      #saves note to database
     return {'storage_note_id': storage_note_id}, 200
 
+
 @app.route("/my_notes")
 @login_required
 def my_notes():
     notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
     my_pools = StudyGroup.query.join(GroupMembership, StudyGroup.group_id == GroupMembership.group_id) \
                                 .filter(GroupMembership.user_id == current_user.user_id).all()
-    return render_template('my_notes.html', title='My Notes', notes=notes, my_pools=my_pools)
+    
+    note_urls = {note.notes_id: get_note_file(note.file_path) for note in notes}  # list comprehension practice: key: value for x in values
+
+    return render_template('my_notes.html', title='My Notes', notes=notes, my_pools=my_pools, note_urls=note_urls)
+
 
 @app.route("/create_pool", methods=['POST', 'GET'])
 @login_required
@@ -124,6 +134,7 @@ def create_pool():
         return redirect(url_for('pool_space', pool_id=pool.group_id)) # if so - send to pool space.
     return render_template('create_pool.html', title='Create Pool', form=form)
     
+
 @app.route("/pool_space/<int:pool_id>")
 @login_required
 def pool_space(pool_id):
@@ -135,9 +146,13 @@ def pool_space(pool_id):
         return redirect(url_for('join_pool'))
     
     members = User.query.join(GroupMembership, User.user_id == GroupMembership.user_id).filter(GroupMembership.group_id == pool_id).all()
-    notes = Notes.query.filter_by(group_id=pool_id).all()
+    notes = Notes.query.filter_by(group_id=pool_id).all()  # a list of note objects 
+    note_urls = {}  # key = note id, val = file path for that note id 
+    for note in notes:  
+        note_urls[note.notes_id] = get_note_file(note.file_path) 
 
-    return render_template('pool_space.html', title=pool.group_name, pool=pool, members=members, notes=notes)
+    return render_template('pool_space.html', title=pool.group_name, pool=pool, members=members, notes=notes, note_urls=note_urls)
+
 
 @app.route("/join_pool")
 @login_required
@@ -145,6 +160,7 @@ def join_pool():
     pools = db.session.query(StudyGroup, User.username).join(User, StudyGroup.created_by == User.user_id).all()
     my_membership_ids = {m.group_id for m in GroupMembership.query.filter_by(user_id=current_user.user_id).all()}
     return render_template('join_pool.html', title='Join a Pool', pools=pools, my_membership_ids=my_membership_ids)
+
 
 @app.route("/join_pool/<int:pool_id>/join", methods=['POST'])
 @login_required
@@ -157,8 +173,6 @@ def join_pool_action(pool_id):
         db.session.commit()
         flash(f'Joined "{pool.group_name}"!', 'success')
     return redirect(url_for('pool_space', pool_id=pool_id))
-
-
 
 
 @app.route("/api/summarize", methods=['POST'])
