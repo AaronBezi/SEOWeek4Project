@@ -285,6 +285,79 @@ header {
     font-size: 17.6px;
 }
 
+/* pool space page */
+.pool-title {
+    font-family: 'Geist Pixel', sans-serif;
+    font-size: 22.4px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.notes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.note-card {
+    background: #f3f4f6;
+    color: var(--text-dark);
+    border-radius: 12px;
+    padding: 20px 16px;
+    font-size: 14.4px;
+    font-weight: bold;
+    text-align: center;
+    word-break: break-word;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.member-list {
+    list-style: none;
+}
+
+.member-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 15.2px;
+}
+
+.pool-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pool-list-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+}
+
+.pool-list-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pool-list-name {
+    font-weight: bold;
+    font-size: 17.6px;
+}
+
+.pool-list-creator {
+    color: #64748b;
+    font-size: 13.6px;
+}
+
+.pool-list-btn {
+    padding: 8px 24px;
+    font-size: 14.4px;
+}
+
 /* register / auth page */
 .auth-card {
     width: 100%;

@@ -29,58 +29,13 @@
             <a class="capsule-btn" href="{{ url_for('login') }}">
                 Sign In
             </a>
-            <button class="capsule-btn" onclick="navigateTo('dashboard')">
+            <a class="capsule-btn" href="{{ url_for('create_pool') }}">
                 Create Pool
-            </button>
-            <button class="capsule-btn" onclick="navigateTo('dashboard')">
+            </a>
+            <a class="capsule-btn" href="{{ url_for('join_pool') }}">
                 Join Pool
-            </button>
+            </a>
         </div>
-    </div>
-
-    <div id="dashboard-view" class="view">
-        <header>
-            <div class="logo" onclick="navigateTo('landing')">STUDY POOL</div>
-
-            <div class="menu-dropdown">
-                <button class="menu-trigger" onclick="toggleDropdown()" aria-label="Open Menu">
-                    <span class="three-dots"></span>
-                </button>
-                <div id="myDropdown" class="dropdown-content">
-                    <a href="#" onclick="navigateTo('landing')">Home</a>
-                    <a href="#" onclick="alert('Create Space feature coming soon!')">Create Pool</a>
-                    <a href="#" onclick="alert('Opening your other shared spaces...')">Join a Different Pool</a>
-                </div>
-            </div>
-        </header>
-
-        <div class="workspace-container">
-            <main class="notes-section">
-                <h2>Course Notes</h2>
-                <div id="notes-content">
-                    <p class="placeholder-text">Upload your notes and generate summaries, making studying simpler!</p>
-                </div>
-                <div id="summary-content" style="display:none;"></div>
-            </main>
-
-            <input type="file" id="file-input" style="display:none"
-                   accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg">
-
-            <div class="action-stack">
-                <button class="task-btn" id="upload-btn">
-                    <span class="btn-icon">+</span>
-                    <span class="btn-text">Upload Doc</span>
-                </button>
-                <button class="task-btn summary-btn" id="summarize-btn">
-                    <span class="btn-icon">☰</span>
-                    <span class="btn-text">Summarize Notes</span>
-                </button>
-            </div>
-        </div>
-
-        <footer>
-            &copy; 2026 Study Pool
-        </footer>
     </div>
 
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>

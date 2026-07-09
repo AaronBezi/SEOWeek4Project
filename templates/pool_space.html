@@ -13,10 +13,10 @@
 </head>
 <body>
 
-    <div id="join-pool-view" class="view active">
+    <div id="pool-space-view" class="view active">
         <header>
             <div class="logo" onclick="window.location.href='{{ url_for('home') }}'">STUDY POOL</div>
-            <div class="pool-title">Browse Pools</div>
+            <div class="pool-title">{{ pool.group_name }}</div>
         </header>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -29,30 +29,38 @@
 
         <div class="workspace-container">
             <main class="notes-section">
-                <h2>Available Pools</h2>
-                <div class="pool-list">
-                    {% for pool, creator_username in pools %}
-                        <div class="pool-list-row">
-                            <div class="pool-list-info">
-                                <span class="pool-list-name">{{ pool.group_name }}</span>
-                                <span class="pool-list-creator">Created by {{ creator_username }}</span>
-                            </div>
-                            {% if pool.group_id in my_membership_ids %}
-                                <a class="capsule-btn pool-list-btn" href="{{ url_for('pool_space', pool_id=pool.group_id) }}">View</a>
-                            {% else %}
-                                <form method="POST" action="{{ url_for('join_pool_action', pool_id=pool.group_id) }}">
-                                    <button type="submit" class="capsule-btn pool-list-btn">Join</button>
-                                </form>
-                            {% endif %}
-                        </div>
+                <h2>Shared Notes</h2>
+                <div class="notes-grid">
+                    {% for note in notes %}
+                        <div class="note-card">{{ note.note_name }}</div>
                     {% else %}
-                        <p class="placeholder-text">No pools yet. Be the first to create one!</p>
+                        <p class="placeholder-text">No notes shared here yet. Be the first to upload one!</p>
                     {% endfor %}
                 </div>
+
+                <h2>Members</h2>
+                <ul class="member-list">
+                    {% for member in members %}
+                        <li>{{ member.username }}</li>
+                    {% endfor %}
+                </ul>
             </main>
+
+            <input type="file" id="file-input" style="display:none"
+                   accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+                   data-pool-id="{{ pool.group_id }}">
+
+            <div class="action-stack">
+                <button class="task-btn" id="upload-btn">
+                    <span class="btn-icon">+</span>
+                    <span class="btn-text">Upload Doc</span>
+                </button>
+            </div>
         </div>
 
         <a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
     </div>
+
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
 </html>

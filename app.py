@@ -93,8 +93,10 @@ def upload():
     if not allowed_file(file.filename):
         return {'error': 'Unsupported file format'}, 400
     
+    group_id = request.form.get('group_id') or None
+
     storage_note_id,filepath = upload_note_file(file)
-    Notes.create_Note(current_user.user_id,file.filename,filepath)      #saves note to database
+    Notes.create_Note(current_user.user_id,file.filename,filepath,group_id)      #saves note to database
     return {'storage_note_id': storage_note_id}, 200
 
 @app.route("/create_pool", methods=['POST', 'GET'])
@@ -114,6 +116,39 @@ def create_pool():
         return redirect(url_for('pool_space', pool_id=pool.group_id)) # if so - send to pool space.
     return render_template('create_pool.html', title='Create Pool', form=form)
     
+@app.route("/pool_space/<int:pool_id>")
+@login_required
+def pool_space(pool_id):
+    pool = StudyGroup.query.get_or_404(pool_id)
+
+    membership = GroupMembership.query.filter_by(group_id=pool_id, user_id=current_user.user_id).first()
+    if not membership:
+        flash('Join this pool to view its space.', 'error')
+        return redirect(url_for('join_pool'))
+    
+    members = User.query.join(GroupMembership, User.user_id == GroupMembership.user_id).filter(GroupMembership.group_id == pool_id).all()
+    notes = Notes.query.filter_by(group_id=pool_id).all()
+
+    return render_template('pool_space.html', title=pool.group_name, pool=pool, members=members, notes=notes)
+
+@app.route("/join_pool")
+@login_required
+def join_pool():
+    pools = db.session.query(StudyGroup, User.username).join(User, StudyGroup.created_by == User.user_id).all()
+    my_membership_ids = {m.group_id for m in GroupMembership.query.filter_by(user_id=current_user.user_id).all()}
+    return render_template('join_pool.html', title='Join a Pool', pools=pools, my_membership_ids=my_membership_ids)
+
+@app.route("/join_pool/<int:pool_id>/join", methods=['POST'])
+@login_required
+def join_pool_action(pool_id):
+    pool = StudyGroup.query.get_or_404(pool_id)
+    existing = GroupMembership.query.filter_by(group_id=pool_id, user_id=current_user.user_id).first()
+    if not existing:
+        membership = GroupMembership(group_id=pool_id, user_id=current_user.user_id)
+        db.session.add(membership)
+        db.session.commit()
+        flash(f'Joined "{pool.group_name}"!', 'success')
+    return redirect(url_for('pool_space', pool_id=pool_id))
 
 @app.route("/api/summarize", methods=['POST'])
 def summarize():

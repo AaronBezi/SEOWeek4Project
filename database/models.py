@@ -30,8 +30,8 @@ class Notes(db.Model):
     time_uploaded = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
 
     #create note object
-    def create_Note(id,name,path):
-        note = Notes(user_id=id,note_name=name,file_path=path)
+    def create_Note(id,name,path,group_id=None):
+        note = Notes(user_id=id,note_name=name,file_path=path,group_id=group_id)
         db.session.add(note)
         db.session.commit()
 
