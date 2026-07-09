@@ -29,20 +29,6 @@ class TestAddSummary:
             db.session.delete(user)
             db.session.commit()
 
-  
-    
-
-
-        
-
-
-        
-
-
-
-
-
-
 ##NOT IMPLEMENTED AS FUNCTIONS IMBEDDED IN REGISTER ROUTE
 # class TestCreateUser:
 #     def test_returns_user_id(self, db):

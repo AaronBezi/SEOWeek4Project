@@ -30,7 +30,7 @@
         <div class="workspace-container">
             <main class="notes-section">
                 <h2>Shared Notes</h2>
-                <div class="notes-grid">
+                <div class="notes-grid" id="notes-content">
                     {% for note in notes %}
                         <div class="note-card">{{ note.note_name }}</div>
                     {% else %}

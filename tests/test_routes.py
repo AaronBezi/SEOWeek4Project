@@ -1,7 +1,7 @@
 import pytest
 from io import BytesIO
 from werkzeug.security import generate_password_hash
-from database.models import User
+from database.models import User, Notes
 from database.database import db as _db
 
 
@@ -127,12 +127,32 @@ class TestGroups:
 
 
 class TestSummarizeRoute:
-    # waiting on Diego to add /summarize route
-    def test_summarize_returns_text(self, client, monkeypatch):
-        # monkeypatch summarize_text to return a fake summary
-        # POST a note_id to /summarize and assert a non-empty summary string is returned
-        pass
+    def test_summarize_unauthenticated_returns_401(self, client):
+        response = client.post('/api/summarize')
+        assert response.status_code == 401
 
-    def test_summarize_missing_note_id_returns_400(self, client):
-        # POST to /summarize with no note_id and assert a 400 response
-        pass
+    def test_summarize_no_notes_returns_400(self, client):
+        register_user(client)
+        login_user_via_form(client)
+        response = client.post('/api/summarize')
+        assert response.status_code == 400
+
+    def test_summarize_returns_200_with_summary(self, client, db, monkeypatch):
+        monkeypatch.setattr('app.generate_summary', lambda notes: {'success': True, 'summary': 'Fake summary'})
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        Notes.create_Note(user.user_id, 'test.pdf', '/files/test.pdf')
+        response = client.post('/api/summarize')
+        assert response.status_code == 200
+        assert response.get_json()['success'] is True
+        assert response.get_json()['summary'] == 'Fake summary'
+
+    def test_summarize_openai_error_returns_500(self, client, db, monkeypatch):
+        monkeypatch.setattr('app.generate_summary', lambda notes: {'success': False, 'error': 'API down'})
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        Notes.create_Note(user.user_id, 'test.pdf', '/files/test.pdf')
+        response = client.post('/api/summarize')
+        assert response.status_code == 500
