@@ -13,7 +13,9 @@ class TestGetSummary:
 
         note = Notes(user_id = user.user_id,note_name="calculus.pdf",file_path="/school/calculus.pdf")
         
-        summary = Notes_Summary.get_summary(user.note)
+        summary = Notes_Summary.get_summary(note.note_id,user.user_id,"Testing some text for coding project")
+        
+    
 
 
         
