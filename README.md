@@ -25,9 +25,10 @@ The app replaces messy local file tracking with a structured relational database
 
 ---
 #Created By 👾
-Aaron Bezi
-Cailan Jeremiah-Barry
-Diego Perez-Aguilar
-Sheyla Almanzar-Abreu 
-
+\Aaron Bezi
+\Cailan Jeremiah-Barry
+\Diego Perez-Aguilar
+\Sheyla Almanzar-Abreu 
+\
+\
 SEO Tech Developer — Summer Residency
