@@ -24,10 +24,10 @@ The app replaces messy local file tracking with a structured relational database
 * **Notes & Documents:** Secure storage paths and metadata for uploaded notes, strictly bound to their respective user and group IDs.
 
 ---
-#Created By 👾 <br>
-##Aaron Bezi <br>
-##Cailan Jeremiah-Barry <br>
-##Diego Perez-Aguilar <br>
-##Sheyla Almanzar-Abreu <br>
+## SEO Tech Developer — Summer Residency (2026)
 
-##SEO Tech Developer — Summer Residency
+### Created By 👾
+* **Aaron Bezi**
+* **Cailan Jeremiah-Barry**
+* **Diego Perez-Aguilar**
+* **Sheyla Almanzar-Abreu**
