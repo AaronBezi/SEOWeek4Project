@@ -22,3 +22,12 @@ The app replaces messy local file tracking with a structured relational database
 * **Study Groups:** Tracking metadata for each created pool workspace.
 * **Group Memberships:** The specific rules mapping which users have access to which pools.
 * **Notes & Documents:** Secure storage paths and metadata for uploaded notes, strictly bound to their respective user and group IDs.
+
+---
+#Created By 👾
+Aaron Bezi
+Cailan Jeremiah-Barry
+Diego Perez-Aguilar
+Sheyla Almanzar-Abreu 
+
+SEO Tech Developer — Summer Residency
