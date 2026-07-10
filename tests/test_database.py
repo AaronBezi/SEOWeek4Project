@@ -29,31 +29,6 @@ class TestAddSummary:
             db.session.delete(user)
             db.session.commit()
 
-##NOT IMPLEMENTED AS FUNCTIONS IMBEDDED IN REGISTER ROUTE
-# class TestCreateUser:
-#     def test_returns_user_id(self, db):
-#         # create a user with (username, email, password) and assert the returned value is a positive integer user_id
-#         pass
-
-#     def test_duplicate_email_raises(self, db):
-#         # create two users with the same email and assert an exception is raised
-#         pass
-
-#     def test_duplicate_username_raises(self, db):
-#         # create two users with the same username and assert an exception is raised
-#         pass
-
-
-# class TestGetUserByEmail:
-#     def test_returns_user(self, db):
-#         # create a user, look them up by email, assert user.username matches
-#         pass
-
-#     def test_missing_email_returns_none(self, db):
-#         # look up an email that was never inserted and assert None is returned
-#         pass
-
-
 class TestNotes:
     def test_create_note_returns_notes_id(self, db):
         user = User(username="noteuser", email="noteuser@example.com", password="pass")
