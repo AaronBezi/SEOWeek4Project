@@ -48,14 +48,16 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch('/api/summarize', { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
+                    summaryContent.style.display = 'block';
                     if (data.success) {
-                        summaryContent.style.display = 'block';
-                        summaryContent.innerHTML = `
-                            <h3>Summary</h3>
-                            <div>${data.summary}</div>
-                        `;
+                        const items = data.summary.map(item => `
+                            <div>
+                                <strong>${item.note_name}</strong>
+                                <p>${item.summary}</p>
+                            </div>
+                        `).join('<hr>');
+                        summaryContent.innerHTML = `<h3>Summary</h3>${items}`;
                     } else {
-                        summaryContent.style.display = 'block';
                         summaryContent.innerHTML = `<p class="placeholder-text" style="color: #dc2626;">Error: ${data.error || 'Could not generate summary.'}</p>`;
                     }
                 })
