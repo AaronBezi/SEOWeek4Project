@@ -1,4 +1,4 @@
-# StudyPools: Group Workspaces & Isolated Document Summarization
+# StudyPools 🏊
 
 StudyPools is a web application built with Flask that takes the mess out of collaborative studying. It allows users to create dedicated, private group workspaces ("study pools"), upload their coursework materials natively, and generate algorithm-driven document summaries using language models. Crucially, the app isolates file tracking so that your readings and summaries are completely locked to the specific group space you are working in.
 
