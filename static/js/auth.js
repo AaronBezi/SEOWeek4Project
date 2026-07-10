@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch('/upload', { method: 'POST', body: formData })
                 .then(res => res.json())
                 .then(data => {
-                    notesContent.innerHTML = `<p class="placeholder-text">Uploaded: <strong>${file.name}</strong></p>`;
+                    window.location.reload()
+                    // notesContent.innerHTML = `<p class="placeholder-text">Uploaded: <strong>${file.name}</strong></p>`;
                 })
                 .catch(() => {
                     notesContent.innerHTML = `<p class="placeholder-text">Upload failed. Please try again.</p>`;
