@@ -89,6 +89,8 @@ class StudyGroup(db.Model):
     group_name = db.Column(db.String(255),nullable=False)
     created_by = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False)
     time_created =  db.Column(db.DateTime(timezone=True), nullable = False, default = datetime.utcnow)
+    is_private = db.Column(db.Boolean, nullable=False, default=False)
+    invite_code = db.Column(db.String(20), unique=True,  nullable=True)
 
     def create_group(group_name,created_by_id):
         #create study group object and store in the database

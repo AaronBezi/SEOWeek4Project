@@ -39,8 +39,15 @@
                             </div>
                             {% if pool.group_id in my_membership_ids %}
                                 <a class="capsule-btn pool-list-btn" href="{{ url_for('pool_space', pool_id=pool.group_id) }}">View</a>
+                            {% elif pool.is_private %}
+                                <form method="POST" action="{{ url_for('join_pool_action', pool_id=pool.group_id) }}">
+                                    {{ form.hidden_tag() }}
+                                    <input type="text" name="code" placeholder="Invite code" required>
+                                    <button type="submit" class="capsule-btn pool-list-btn">Join</button>
+                                </form>
                             {% else %}
                                 <form method="POST" action="{{ url_for('join_pool_action', pool_id=pool.group_id) }}">
+                                    {{ form.hidden_tag() }}
                                     <button type="submit" class="capsule-btn pool-list-btn">Join</button>
                                 </form>
                             {% endif %}

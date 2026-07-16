@@ -17,6 +17,12 @@
         <header>
             <div class="logo" onclick="window.location.href='{{ url_for('home') }}'">STUDY POOL</div>
             <div class="pool-title">{{ pool.group_name }}</div>
+            {# Pool owners can see the invite code! #}
+            {% if pool.created_by == current_user.user_id and pool.is_private %}
+            <div class="note-card">
+                Invite code: <strong>{{ pool.invite_code }}</strong>
+            </div>
+            {% endif %}
         </header>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -33,7 +39,14 @@
                 <div class="notes-grid" id="notes-content">
                     {% for note in notes %}
                     {% if note.file_path %}
-                        <a class="note-card" href="{{ note_urls[note.notes_id] }}" target="_blank">{{ note.note_name }}</a>
+                    <div class="note-card">
+                        <a href="{{ note_urls[note.notes_id] }}" target="_blank">{{ note.note_name }}</a>
+                        {% if note.user_id == current_user.user_id %}
+                            <form method="POST" action="{{ url_for('delete_note', note_id=note.notes_id) }}">
+                                <button type="submit">Delete</button>
+                            </form>
+                        {% endif %}
+                    </div>
                     {% endif %}
                     {% else %}
                         <p class="placeholder-text">No notes shared here yet. Be the first to upload one!</p>
