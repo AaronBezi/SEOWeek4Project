@@ -46,7 +46,14 @@
                 <div class="notes-grid" id="notes-content">
                     {% for note in notes %}
                     {% if note.file_path %}
-                        <a class="note-card" href="{{ note_urls[note.notes_id] }}" target="_blank">{{ note.note_name }}</a>
+                    <div class="note-card">
+                        <a href="{{ note_urls[note.notes_id] }}" target="_blank">{{ note.note_name }}</a>
+                        {% if note.user_id == current_user.user_id %}
+                            <form method="POST" action="{{ url_for('delete_note', note_id=note.notes_id) }}">
+                                <button type="submit">Delete</button>
+                            </form>
+                        {% endif %}
+                    </div>
                     {% endif %}
                     {% else %}
                         <p class="placeholder-text">No personal notes yet. Upload one to get started!</p>
