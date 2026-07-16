@@ -48,6 +48,8 @@ def generate_summary(note):
         return {"success": False, "error": str(e)}
 
 
+
+
     
 
 

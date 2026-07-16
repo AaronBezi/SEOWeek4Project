@@ -151,7 +151,7 @@ def pool_space(pool_id):
     notes = Notes.query.filter_by(group_id=pool_id).all()  # a list of note objects 
     note_urls = {}  # key = note id, val = file path for that note id 
     for note in notes:  
-        note_urls[note.notes_id] = get_note_file(note.file_path) 
+        note_urls[note.notes_id] = get_note_file(note.file_path)
 
     return render_template('pool_space.html', title=pool.group_name, pool=pool, members=members, notes=notes, note_urls=note_urls)
 
