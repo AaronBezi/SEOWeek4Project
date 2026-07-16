@@ -2,11 +2,12 @@ from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_behind_proxy import FlaskBehindProxy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from forms import RegistrationForm, LoginForm, CreatePoolForm
+from forms import RegistrationForm, LoginForm, CreatePoolForm, JoinPoolForm
 from database.models import User,Notes,Notes_Summary, StudyGroup, GroupMembership
 from database.database import db
 from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
 from api.openAI_api import generate_summary
+import secrets
 import git
 import os
 import subprocess
@@ -145,10 +146,11 @@ def delete_note(note_id):
 def create_pool():
     form = CreatePoolForm()
     if form.validate_on_submit(): # checks if entries are valid
-        pool = StudyGroup(group_name=form.group_name.data, created_by=current_user.user_id)
+        pool = StudyGroup(group_name=form.group_name.data, created_by=current_user.user_id, is_private=form.is_private.data)
+        if pool.is_private:
+            pool.invite_code = secrets.token_urlsafe(6)
         db.session.add(pool)
         db.session.commit()  # commit so pool.group_id actually gets assigned. 
-
         membership = GroupMembership(group_id=pool.group_id, user_id=current_user.user_id)
         db.session.add(membership)
         db.session.commit()
@@ -180,17 +182,28 @@ def pool_space(pool_id):
 @app.route("/join_pool")
 @login_required
 def join_pool():
+    form = JoinPoolForm()
     pools = db.session.query(StudyGroup, User.username).join(User, StudyGroup.created_by == User.user_id).all()
     my_membership_ids = {m.group_id for m in GroupMembership.query.filter_by(user_id=current_user.user_id).all()}
-    return render_template('join_pool.html', title='Join a Pool', pools=pools, my_membership_ids=my_membership_ids)
+    return render_template('join_pool.html', title='Join a Pool', pools=pools, my_membership_ids=my_membership_ids, form=form)
 
 
 @app.route("/join_pool/<int:pool_id>/join", methods=['POST'])
 @login_required
 def join_pool_action(pool_id):
+    form = JoinPoolForm()
     pool = StudyGroup.query.get_or_404(pool_id)
+    is_join_valid = False
+    if pool.is_private:
+        if not form.validate_on_submit() or form.code.data != pool.invite_code:
+                flash('Invalid invite code.', 'error')
+                return redirect(url_for('join_pool'))
+        is_join_valid = True
+    else:
+        is_join_valid = True
+
     existing = GroupMembership.query.filter_by(group_id=pool_id, user_id=current_user.user_id).first()
-    if not existing:
+    if not existing and is_join_valid:
         membership = GroupMembership(group_id=pool_id, user_id=current_user.user_id)
         db.session.add(membership)
         db.session.commit()

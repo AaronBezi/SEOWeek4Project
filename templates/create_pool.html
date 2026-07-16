@@ -34,6 +34,8 @@
                     {% for error in form.group_name.errors %}
                         <span class="field-error">{{ error }}</span>
                     {% endfor %}
+                    {{ form.is_private.label(class="form-label") }}
+                    {{ form.is_private() }}
                 </div>
                 
                 {{ form.submit(class="capsule-btn auth-submit") }}
