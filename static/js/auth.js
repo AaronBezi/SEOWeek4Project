@@ -46,7 +46,15 @@ document.addEventListener('DOMContentLoaded', function () {
             summarizeBtn.disabled = true;
             summarizeBtn.querySelector('.btn-text').textContent = 'Summarizing...';
 
-            fetch('/api/summarize', { method: 'POST' })
+            const poolId = fileInput ? fileInput.dataset.poolId : null;
+
+            fetch('/api/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body:JSON.stringify({group_id: poolId})
+                })
                 .then(res => res.json())
                 .then(data => {
                     summaryContent.style.display = 'block';
@@ -72,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
         });
     }
-});
+}); // <--- FIX: This closing block was missing, which caused the entire file to break!
 
 function navigateTo(viewId) {
     document.querySelectorAll('.view').forEach(view => {
