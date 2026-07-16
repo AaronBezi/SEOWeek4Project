@@ -124,7 +124,12 @@ def my_notes():
 @login_required
 def delete_note(note_id):
     note = Notes.query.get_or_404(note_id)
-    if current_user.user_id == note.user_id:
+    if note.group_id: # if the note belongs to a group
+        pool = StudyGroup.query.get(note.group_id)
+    else:
+        pool = None
+    
+    if (pool is not None and current_user.user_id == pool.created_by) or current_user.user_id == note.user_id:
         delete_note_file(note.file_path)
         db.session.delete(note)
         db.session.commit()
