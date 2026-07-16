@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from forms import RegistrationForm, LoginForm, CreatePoolForm, JoinPoolForm
 from database.models import User,Notes,Notes_Summary, StudyGroup, GroupMembership
 from database.database import db
-from storage import allowed_file, upload_note_file, get_note_file
+from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
 from api.openAI_api import generate_summary
 import secrets
 import git
@@ -105,6 +105,7 @@ def upload():
 
     storage_note_id,filepath = upload_note_file(file)
     Notes.create_Note(current_user.user_id,file.filename,filepath,group_id)      #saves note to database
+    flash('Note uploaded successfully!', 'success')
     return {'storage_note_id': storage_note_id}, 200
 
 
