@@ -193,21 +193,20 @@ def join_pool():
 def join_pool_action(pool_id):
     form = JoinPoolForm()
     pool = StudyGroup.query.get_or_404(pool_id)
-    is_join_valid = False
-    if pool.is_private:
-        if not form.validate_on_submit() or form.code.data != pool.invite_code:
-                flash('Invalid invite code.', 'error')
-                return redirect(url_for('join_pool'))
-        is_join_valid = True
-    else:
-        is_join_valid = True
 
     existing = GroupMembership.query.filter_by(group_id=pool_id, user_id=current_user.user_id).first()
-    if not existing and is_join_valid:
-        membership = GroupMembership(group_id=pool_id, user_id=current_user.user_id)
-        db.session.add(membership)
-        db.session.commit()
-        flash(f'Joined "{pool.group_name}"!', 'success')
+    if existing:
+        return redirect(url_for('pool_space', pool_id=pool_id))
+
+    if pool.is_private:
+        if not form.validate_on_submit() or form.code.data != pool.invite_code:
+            flash('Invalid invite code.', 'error')
+            return redirect(url_for('join_pool'))
+
+    membership = GroupMembership(group_id=pool_id, user_id=current_user.user_id)
+    db.session.add(membership)
+    db.session.commit()
+    flash(f'Joined "{pool.group_name}"!', 'success')
     return redirect(url_for('pool_space', pool_id=pool_id))
 
 

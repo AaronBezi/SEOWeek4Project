@@ -25,5 +25,5 @@ class CreatePoolForm(FlaskForm):
     is_private = BooleanField('Make this pool private')
 
 class JoinPoolForm(FlaskForm):
-    code = StringField('Invite Code', 
-                       validators=[DataRequired(), Length(8)])
+    code = StringField('Invite Code',
+                       validators=[DataRequired(), Length(min=8, max=8)])
