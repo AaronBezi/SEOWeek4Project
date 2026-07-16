@@ -121,8 +121,10 @@ class TestSummarizeRoute:
         Notes.create_Note(user.user_id, 'test.pdf', '/files/test.pdf')
         response = client.post('/api/summarize')
         assert response.status_code == 200
-        assert response.get_json()['success'] is True
-        assert response.get_json()['summary'] == 'Fake summary'
+        data = response.get_json()
+        assert data['success'] is True
+        assert isinstance(data['summary'], list)
+        assert data['summary'][0]['summary'] == 'Fake summary'
 
     def test_summarize_openai_error_returns_500(self, client, db, monkeypatch):
         monkeypatch.setattr('app.generate_summary', lambda notes: {'success': False, 'error': 'API down'})
@@ -132,3 +134,50 @@ class TestSummarizeRoute:
         Notes.create_Note(user.user_id, 'test.pdf', '/files/test.pdf')
         response = client.post('/api/summarize')
         assert response.status_code == 500
+
+
+class TestPrivatePool:
+    def test_join_with_valid_code_returns_200(self, client):
+        # create a private pool with a join code, POST the code, assert 200 and membership created
+        pass
+
+    def test_join_with_invalid_code_returns_404(self, client):
+        # POST an incorrect join code and assert a 404 response
+        pass
+
+    def test_join_already_member_returns_200(self, client):
+        # join a pool twice with the same code and assert no duplicate membership is created
+        pass
+
+
+class TestChat:
+    def test_send_message_unauthenticated_returns_401(self, client):
+        # POST to /chat/<pool_id>/send without login and assert 401
+        pass
+
+    def test_send_message_returns_200(self, client):
+        # login, POST a message to a pool chat, assert 200 and message saved
+        pass
+
+    def test_get_messages_returns_list(self, client):
+        # login, send 2 messages, GET /chat/<pool_id>/messages, assert list of 2
+        pass
+
+    def test_get_messages_empty_pool_returns_empty(self, client):
+        # GET messages for a pool with no chat history and assert empty list
+        pass
+
+
+class TestQuiz:
+    def test_generate_quiz_unauthenticated_returns_401(self, client):
+        # POST to /api/quiz without login and assert 401
+        pass
+
+    def test_generate_quiz_no_notes_returns_400(self, client):
+        # login with no notes uploaded, POST to /api/quiz, assert 400
+        pass
+
+    def test_generate_quiz_returns_questions(self, client, db, monkeypatch):
+        # monkeypatch quiz generation, login, add a note, POST to /api/quiz
+        # assert 200 and response contains a list of questions
+        pass
