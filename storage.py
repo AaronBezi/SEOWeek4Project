@@ -32,3 +32,7 @@ def get_note_file(file_path):
     expires_in_seconds = 3600  # 1 hour
     data = get_supabase().storage.from_(BUCKET_NAME).create_signed_url(file_path, expires_in_seconds)  # retrieves a dictionary of the signed URL
     return data['signedUrl']  # returns the actual url to the actual file bytes 
+
+
+def delete_note_file(file_path):
+    return get_supabase().storage.from_(BUCKET_NAME).remove([file_path])

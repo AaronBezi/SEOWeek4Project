@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch('/upload', { method: 'POST', body: formData })
                 .then(res => res.json())
                 .then(data => {
-                    notesContent.innerHTML = `<p class="placeholder-text">Uploaded: <strong>${file.name}</strong></p>`;
+                    window.location.reload()
+                    // notesContent.innerHTML = `<p class="placeholder-text">Uploaded: <strong>${file.name}</strong></p>`;
                 })
                 .catch(() => {
                     notesContent.innerHTML = `<p class="placeholder-text">Upload failed. Please try again.</p>`;
@@ -45,7 +46,15 @@ document.addEventListener('DOMContentLoaded', function () {
             summarizeBtn.disabled = true;
             summarizeBtn.querySelector('.btn-text').textContent = 'Summarizing...';
 
-            fetch('/api/summarize', { method: 'POST' })
+            const poolId = fileInput ? fileInput.dataset.poolId : null;
+
+            fetch('/api/summarize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body:JSON.stringify({group_id: poolId})
+                })
                 .then(res => res.json())
                 .then(data => {
                     summaryContent.style.display = 'block';
