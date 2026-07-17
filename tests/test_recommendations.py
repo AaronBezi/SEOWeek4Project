@@ -71,3 +71,30 @@ class TestRecommendations:
                 "error": "No document found to analyze."
             }
             mock_client.chat.completions.parse.assert_not_called()
+
+    
+    
+    def test_analyze_document_no_parsed_metadata(self):
+    #parsed metadata isnt returned
+        note = MagicMock()
+        note.file_path = "templates/calc.png"
+
+        with patch("api.recommendations.books_api.open_client") as mock_client, \
+        patch("api.recommendations.books_api.download_file") as mock_download, \
+        patch("api.recommendations.books_api.extract_text") as mock_extract:
+
+            mock_download.return_value = (b"%PDF-1.4 FINAL TEST FAKE FAKE FAKE","jpg")
+            mock_extract.return_value = "Depth First search and topological Sort for DSA class"
+        
+            mock_response = MagicMock()
+            mock_response.choices[0].message.parsed = None
+            mock_response.choices[0].message.refusal = None
+            mock_client.chat.completions.parse.return_value = mock_response
+
+            #inputting with empty whitespace should output No document found
+            result = analyze_document(note)
+            assert result == {
+                "success": False,
+                "error": "Document could not be analyzed"
+            }
+            mock_client.chat.completions.parse.assert_called_once()
