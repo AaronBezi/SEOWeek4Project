@@ -175,7 +175,21 @@ def rank_books(study_profile,books_retrieved):
             return {"success": False, "error": str(e)}
         
 
-
+#FULL RECOMMENDATION PIPELINE IN ONE FUNCTION TO BE USED LATER
+def generate_recommendations(study_profile):
+    #STEP 1: generate books based on profile with genai api
+    queries = gen_books(study_profile)
+    #If fail return error message
+    if not queries.get("success"):
+        return queries
+    
+    #STEP 2: Send the books openai generated to the BOOks api to find the actual books and link
+    books = retrieve_books(queries)
+    if not books.get("success"):
+        return books
+    
+    #STEP 3: Pass the books found from the books api to openai api to rank them and provide the recommendations
+    return rank_books(study_profile,books)
     
      
 
