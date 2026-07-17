@@ -3,10 +3,11 @@ from flask_behind_proxy import FlaskBehindProxy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from forms import RegistrationForm, LoginForm, CreatePoolForm
-from database.models import User,Notes,Notes_Summary, StudyGroup, GroupMembership
+from database.models import User,Notes,Notes_Summary, StudyGroup, GroupMembership, Message
 from database.database import db
 from storage import allowed_file, upload_note_file, get_note_file
 from api.openAI_api import generate_summary
+from pusher import Pusher
 import git
 import os
 import subprocess
@@ -18,6 +19,14 @@ proxied = FlaskBehindProxy(app)          # handle codio redirection
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+
+pusher_client = Pusher(
+    app_id = os.getenv('PUSHER_APP_ID'),
+    key = os.getenv('PUSHER_KEY'),
+    secret = os.getenv('PUSHER_SECRET'),
+    cluster = os.getenv('PUSHER_CLUSTER'),
+    ssl = True
+)
 
 db.init_app(app)
 
