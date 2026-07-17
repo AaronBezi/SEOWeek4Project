@@ -84,3 +84,52 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+
+function toggleDropdown() {
+    document.getElementById('myDropdown').classList.toggle('show');
+}
+
+window.onclick = function (event) {
+    if (!event.target.matches('.menu-trigger') && !event.target.matches('.three-dots')) {
+        document.querySelectorAll('.dropdown-content').forEach(dropdown => {
+            dropdown.classList.remove('show');
+        });
+    }
+};
+
+let allRecommendations = [];
+
+function renderBooks(books) {
+    const bookFeed = document.getElementById('book-feed');
+    if (!bookFeed) return;
+    if (!books || books.length === 0) {
+        bookFeed.innerHTML = '<p class="placeholder-text">No recommendations found.</p>';
+        return;
+    }
+    bookFeed.innerHTML = books.map(book => `
+        <div class="book-card">
+            <strong>${book.subject}</strong>
+            <p>${book.summary}</p>
+            <div class="book-tags">
+                ${book.topics.map(t => `<span class="tag">${t}</span>`).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function runLiveSearch() {
+    const query = document.getElementById('search-input').value.toLowerCase();
+    const filtered = allRecommendations.filter(book =>
+        book.subject.toLowerCase().includes(query) ||
+        book.summary.toLowerCase().includes(query) ||
+        book.topics.some(t => t.toLowerCase().includes(query)) ||
+        book.keywords.some(k => k.toLowerCase().includes(query))
+    );
+    renderBooks(filtered);
+}
+
+function toggleLayoutMode() {
+    const bookFeed = document.getElementById('book-feed');
+    bookFeed.classList.toggle('book-list');
+    bookFeed.classList.toggle('book-grid');
+}
