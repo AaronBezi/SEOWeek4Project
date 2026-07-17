@@ -1,74 +1,83 @@
-<style>
-    /* Chat Panel Styling */
-    .chat-section {
-        font-family: 'Sofia Sans', sans-serif;
-        position: fixed; bottom: 40px; right: 40px;
-        background: #ffffff; color: #0A0A0A;
-        border-radius: 16px; box-shadow: 0 12px 45px rgba(0,0,0,0.3);
-        display: flex; flex-direction: column;
-        width: 380px; height: 520px; overflow: hidden; z-index: 1000;
-    }
-    .chat-header-bar { background-color: #263238; color: #ffffff; padding: 14px 20px; }
-    .chat-body { display: flex; flex-direction: column; flex: 1; padding: 16px; overflow: hidden; }
-    .chat-history { flex: 1; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; }
-    .chat-container { border-radius: 12px; padding: 10px 14px; max-width: 80%; display: flex; flex-direction: column; }
-    .chat-container.incoming { background-color: #E5E7EB; align-self: flex-start; }
-    .chat-container.outgoing { background-color: #5D6D7E; color: #ffffff; align-self: flex-end; }
-    .chat-sender { font-size: 11px; font-weight: bold; margin-bottom: 2px; }
-    .chat-input-form { display: flex; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
-    .text-input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #d1d5db; }
-    .chat-send-btn { background-color: #263238; color: #ffffff; border: none; padding: 0 18px; border-radius: 8px; cursor: pointer; }
-</style>
-
-<aside class="chat-section">
-    <div class="chat-header-bar"><h2>Pool Chat</h2></div>
+<aside class="chat-section" id="chat-panel">
+    <div class="chat-header-bar" id="chat-header">
+        <h2>Pool Chat</h2>
+        <div class="chat-controls">
+            <button class="chat-toggle-btn" id="expand-toggle-btn" title="Toggle Size">⤢</button>
+            <button class="chat-toggle-btn" id="collapse-toggle-btn" title="Minimize">−</button>
+        </div>
+    </div>
     <div class="chat-body">
         <div class="chat-history" id="chat-stream-box">
-            {% for msg in chat_messages %}
-                <div class="chat-container {{ 'outgoing' if msg.user_id == current_user.user_id else 'incoming' }}">
-                    <span class="chat-sender">{{ msg.user.username }}</span>
-                    <p>{{ msg.text }}</p>
-                    <span class="chat-time">{{ msg.time_sent.strftime('%I:%M %p') }}</span>
-                </div>
-            {% endfor %}
+            {% if chat_messages %}
+                {% for msg in chat_messages %}
+                    <div class="chat-container {% if msg.user_id == current_user.user_id %}outgoing{% else %}incoming{% endif %}">
+                        <span class="chat-sender">{{ msg.username }}</span>
+                        <p>{{ msg.message_text }}</p>
+                        <span class="chat-time">{{ msg.timestamp.strftime('%I:%M %p') }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
         </div>
-        <form class="chat-input-form" id="chat-input-form">
-            <input type="text" id="message-input-field" class="text-input" placeholder="Type a message..." required>
+        <form class="chat-input-form" id="chat-input-form" method="POST" action="{{ url_for('send_chat_message', pool_id=pool.pool_id) if pool else '#' }}">
+            <input type="text" id="message-input-field" name="message" class="text-input" placeholder="Type a message..." required autocomplete="off">
             <button type="submit" class="chat-send-btn">Send</button>
         </form>
     </div>
 </aside>
 
 <script>
-    const POOL_ID = "{{ pool.group_id }}";
-    const CURRENT_USERNAME = "{{ current_user.username }}";
-    const chatStreamBox = document.getElementById('chat-stream-box');
-    chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+    document.addEventListener("DOMContentLoaded", () => {
+        const chatPanel = document.getElementById('chat-panel');
+        const chatHeader = document.getElementById('chat-header');
+        const chatStreamBox = document.getElementById('chat-stream-box');
+        const expandBtn = document.getElementById('expand-toggle-btn');
+        const collapseBtn = document.getElementById('collapse-toggle-btn');
 
-    // 1. Initialize Pusher
-    // REPLACE THESE WITH YOUR KEYS
-    const pusher = new Pusher("{{pusher_key}}", {
-        cluster: "{{pusher_cluster}}"
+        // --- 1. UI Window Layout Controls ---
+        if (chatStreamBox) {
+            chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+        }
+
+        chatHeader.addEventListener('click', (e) => {
+            if (e.target === expandBtn || e.target === collapseBtn) return;
+            chatPanel.classList.remove('is-expanded');
+            chatPanel.classList.toggle('is-collapsed');
+            collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
+        });
+
+        expandBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            chatPanel.classList.remove('is-collapsed');
+            collapseBtn.textContent = '−';
+            chatPanel.classList.toggle('is-expanded');
+            expandBtn.textContent = chatPanel.classList.contains('is-expanded') ? '⤡' : '⤢';
+            setTimeout(() => { chatStreamBox.scrollTop = chatStreamBox.scrollHeight; }, 150);
+        });
+
+        // --- 2. Live WebSockets Real-time Integration (Pusher) ---
+        const pusher = new Pusher("{{ pusher_key }}", {
+            cluster: "{{ pusher_cluster }}"
+        });
+
+        const channel = pusher.subscribe('pool-' + POOL_ID);
+
+        channel.bind('new-message', function(data) {
+            const div = document.createElement('div');
+            div.className = `chat-container ${data.username === CURRENT_USERNAME ? 'outgoing' : 'incoming'}`;
+            div.innerHTML = `<span class="chat-sender">${data.username}</span><p>${data.text}</p><span class="chat-time">${data.time_sent}</span>`;
+            chatStreamBox.appendChild(div);
+            chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+        });
+
+        // --- 3. Dynamic AJAX Message Interception ---
+        document.getElementById('chat-input-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('message-input-field');
+            const formData = new FormData();
+            formData.append('text', input.value);
+
+            await fetch(`/pool_space/${POOL_ID}/message`, { method: 'POST', body: formData });
+            input.value = '';
+        };
     });
-    
-    const channel = pusher.subscribe('pool-' + POOL_ID);
-
-    channel.bind('new-message', function(data) {
-        const div = document.createElement('div');
-        div.className = `chat-container ${data.username === CURRENT_USERNAME ? 'outgoing' : 'incoming'}`;
-        div.innerHTML = `<span class="chat-sender">${data.username}</span><p>${data.text}</p><span class="chat-time">${data.time_sent}</span>`;
-        chatStreamBox.appendChild(div);
-        chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
-    });
-
-    // 2. Handle Send
-    document.getElementById('chat-input-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const input = document.getElementById('message-input-field');
-        const formData = new FormData();
-        formData.append('text', input.value);
-
-        await fetch(`/pool_space/${POOL_ID}/message`, { method: 'POST', body: formData });
-        input.value = '';
-    };
 </script>

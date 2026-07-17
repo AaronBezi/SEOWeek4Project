@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organic Chemistry Core - Overlapping Chat Test</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght=0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+
+  <style>
+        /* --- YOUR EXACT PLATFORM CSS THEME --- */
+        :root {
+            --bg-color: #1F628E;
+            --btn-bg: #2d3748;
+            --text-dark: #111827;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Sofia Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        header {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo {
+            font-family: 'Geist Pixel', sans-serif;
+            font-size: 28.8px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+            text-shadow: 1px 0px 0px currentColor, -1px 0px 0px currentColor;
+        }
+
+        /* Full landscape size layout, allowing the chat box to layer on top smoothly */
+        .workspace-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding: 24px;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .action-stack {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 5;
+            align-items: flex-start;
+        }
+
+        .task-btn {
+            background-color: var(--btn-bg);
+            color: #ffffff;
+            border: none;
+            height: 46px;
+            width: 46px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 17.6px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 13px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s, transform 0.2s;
+        }
+
+        .btn-icon {
+            font-size: 22.4px;
+            margin-right: 12px;
+            display: inline-block;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .btn-text {
+            opacity: 0;
+            transition: opacity 0.2s ease-out;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 15.2px;
+        }
+
+        .action-stack:hover .task-btn {
+            background-color: #1a202c;
+            width: 180px;
+        }
+
+        .action-stack:hover .task-btn.summary-btn {
+            width: 200px;
+        }
+
+        .task-btn:hover { transform: scale(1.03); }
+        .action-stack:hover .btn-text { opacity: 1; transition-delay: 0.1s; }
+
+        .notes-section {
+            background: #ffffff;
+            color: var(--text-dark);
+            border-radius: 16px;
+            padding: 48px 48px 128px 48px;
+            flex: 1;
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+            min-height: 500px;
+            position: relative;
+        }
+
+        .notes-section h2 {
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-bottom: 24px;
+            color: var(--bg-color);
+            font-size: 32px;
+        }
+
+        .pool-title {
+            font-family: 'Geist Pixel', sans-serif;
+            font-size: 22.4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .note-card {
+            background: #f3f4f6;
+            color: var(--text-dark);
+            border-radius: 12px;
+            padding: 20px 16px;
+            font-size: 14.4px;
+            text-align: center;
+            word-break: break-word;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .note-card a { color: var(--text-dark); font-weight: bold; text-decoration: none; }
+        .note-card a:hover { text-decoration: underline; }
+        .note-card button { background: none; border: none; color: #dc2626; font-size: 12.8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .member-list { list-style: none; }
+        .member-list li { padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 15.2px; }
+        .auth-back-link { display: block; margin-top: 16px; color: #ffffff; font-size: 14px; text-decoration: none; }
+
+        /* ==========================================================================
+           FLOATING / OVERLAPPING CHAT MODULE WITH HIGHER Z-INDEX
+           ========================================================================== */
+        .chat-section {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            background: #ffffff;
+            color: var(--text-dark);
+            border-radius: 16px;
+            box-shadow: 0 16px 50px rgba(0,0,0,0.35); /* Deeper shadow to emphasize layering overlay */
+            display: flex;
+            flex-direction: column;
+            width: 370px;
+            height: 520px;
+            overflow: hidden;
+            z-index: 2000; /* Positions higher than workspace boards and action stacks */
+            transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1),
+                        width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+        }
+
+        /* Collapsed Minimalist State */
+        .chat-section.is-collapsed {
+            height: 52px;
+            width: 240px;
+        }
+
+        /* Expanded Overlay State */
+        .chat-section.is-expanded {
+            width: 480px;
+            height: 700px;
+        }
+
+        .chat-header-bar {
+            background-color: var(--btn-bg);
+            color: #ffffff;
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .chat-header-bar h2 {
+            font-family: 'Geist Pixel', sans-serif;
+            margin: 0;
+            font-size: 16.8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .chat-controls { display: flex; gap: 14px; align-items: center; }
+        .chat-toggle-btn { background: none; border: none; color: #ffffff; font-size: 16px; cursor: pointer; padding: 2px; opacity: 0.8; transition: transform 0.2s, opacity 0.2s; }
+        .chat-toggle-btn:hover { opacity: 1; transform: scale(1.1); }
+
+        /* Only show the expand layout toggle asset when the chat interface body is visible */
+        .chat-section.is-collapsed #expand-toggle-btn {
+            display: none;
+        }
+
+        .chat-body { display: flex; flex-direction: column; flex: 1; padding: 20px; overflow: hidden; background-color: #ffffff; transition: opacity 0.2s; }
+        .chat-section.is-collapsed .chat-body { opacity: 0; pointer-events: none; }
+
+        .chat-history { flex: 1; overflow-y: auto; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
+        .chat-container { border-radius: 12px; padding: 10px 14px; max-width: 80%; display: flex; flex-direction: column; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+
+        .chat-container.incoming { background-color: #f3f4f6; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .chat-container.outgoing { background-color: var(--bg-color); color: #ffffff; align-self: flex-end; border-bottom-right-radius: 2px; }
+
+        .chat-sender { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .chat-container.incoming .chat-sender { color: var(--bg-color); }
+        .chat-time { font-size: 10px; opacity: 0.6; align-self: flex-end; margin-top: 4px; }
+
+        .chat-input-form { display: flex; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+        .chat-input-form .text-input { flex: 1; padding: 12px 18px; border-radius: 50px; border: 2px solid #e2e8f0; outline: none; font-size: 14.4px; color: var(--text-dark); transition: border-color 0.2s; }
+        .chat-input-form .text-input:focus { border-color: var(--bg-color); }
+
+        .chat-send-btn { background-color: var(--btn-bg); color: #ffffff; border: none; padding: 0 22px; border-radius: 50px; cursor: pointer; font-weight: bold; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: background-color 0.2s, transform 0.2s; }
+        .chat-send-btn:hover { background-color: #1a202c; transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+
+    <div id="pool-space-view" class="view active">
+        <header>
+            <div class="logo">STUDY POOL</div>
+            <div class="pool-title">Organic Chemistry Core</div>
+            <div class="note-card" style="padding: 8px 12px; box-shadow: none; margin: 0;">
+                Invite code: <strong>X7yA9z</strong>
+            </div>
+        </header>
+
+        <div class="workspace-container">
+            <main class="notes-section">
+                <h2>Shared Notes</h2>
+                <div class="notes-grid" id="notes-content">
+                    <div class="note-card">
+                        <a href="#">Functional_Groups_CheatSheet.pdf</a>
+                        <button onclick="this.parentElement.remove()">Delete</button>
+                    </div>
+                    <div class="note-card">
+                        <a href="#">Sn1_vs_Sn2_Mechanisms.docx</a>
+                        <button onclick="this.parentElement.remove()">Delete</button>
+                    </div>
+                    <div class="note-card">
+                        <a href="#">Aromatic_Rings_Review.pdf</a>
+                        <button onclick="this.parentElement.remove()">Delete</button>
+                    </div>
+                </div>
+
+                <h2>Members</h2>
+                <ul class="member-list">
+                    <li>Sheyla (You)</li>
+                    <li>Aaron</li>
+                    <li>Carlos</li>
+                </ul>
+            </main>
+
+            <div class="action-stack">
+                <button class="task-btn" id="upload-btn">
+                    <span class="btn-icon">+</span>
+                    <span class="btn-text">Upload Doc</span>
+                </button>
+                <button class="task-btn summary-btn" id="summarize-btn">
+                    <span class="btn-icon">☰</span>
+                    <span class="btn-text">Summarize Notes</span>
+                </button>
+            </div>
+        </div>
+        <a class="auth-back-link" href="#" style="margin-left: 24px; margin-bottom: 24px;">Back to home</a>
+    </div>
+
+    <!-- --- OVERLAPPING CHAT WINDOW --- -->
+    <aside class="chat-section" id="chat-panel">
+        <div class="chat-header-bar" id="chat-header">
+            <h2>Pool Chat</h2>
+            <div class="chat-controls">
+                <!-- Size toggle - automatically hidden via CSS when mini frame is active -->
+                <button class="chat-toggle-btn" id="expand-toggle-btn" title="Toggle Size">⤢</button>
+                <button class="chat-toggle-btn" id="collapse-toggle-btn" title="Minimize">−</button>
+            </div>
+        </div>
+        <div class="chat-body">
+            <div class="chat-history" id="chat-stream-box">
+                <div class="chat-container incoming">
+                    <span class="chat-sender">User1</span>
+                    <p>I just shared my updated notes from last lecture.</p>
+                    <span class="chat-time">07:16 PM</span>
+                </div>
+            </div>
+            <form class="chat-input-form" id="chat-input-form">
+                <input type="text" id="message-input-field" class="text-input" placeholder="Type a message..." required autocomplete="off">
+                <button type="submit" class="chat-send-btn">Send</button>
+            </form>
+        </div>
+    </aside>
+
+    <script>
+        const chatPanel = document.getElementById('chat-panel');
+        const chatHeader = document.getElementById('chat-header');
+        const chatStreamBox = document.getElementById('chat-stream-box');
+        const expandBtn = document.getElementById('expand-toggle-btn');
+        const collapseBtn = document.getElementById('collapse-toggle-btn');
+
+        chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+
+        // 1. Minimize / Collapse Event
+        chatHeader.addEventListener('click', (e) => {
+            if (e.target === expandBtn) return;
+            chatPanel.classList.remove('is-expanded');
+            chatPanel.classList.toggle('is-collapsed');
+            collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
+        });
+
+        // 2. Expand / Maximize Size Toggler Event
+        expandBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            chatPanel.classList.remove('is-collapsed');
+            collapseBtn.textContent = '−';
+            chatPanel.classList.toggle('is-expanded');
+            expandBtn.textContent = chatPanel.classList.contains('is-expanded') ? '⤡' : '⤢';
+            setTimeout(() => { chatStreamBox.scrollTop = chatStreamBox.scrollHeight; }, 150);
+        });
+
+        // 3. Simulated Chat Submit Flow
+        document.getElementById('chat-input-form').onsubmit = function(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input-field');
+            if(!input.value.trim()) return;
+
+            const div = document.createElement('div');
+            div.className = "chat-container outgoing";
+            div.innerHTML = `<span class="chat-sender">Sheyla</span><p>${input.value}</p><span class="chat-time">07:17 PM</span>`;
+            chatStreamBox.appendChild(div);
+
+            input.value = '';
+            chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+
+            setTimeout(() => {
+                const reply = document.createElement('div');
+                reply.className = "chat-container incoming";
+                reply.innerHTML = `<span class="chat-sender">User2</span><p>Perfect!</p><span class="chat-time">07:17 PM</span>`;
+                chatStreamBox.appendChild(reply);
+                chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
