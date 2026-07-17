@@ -161,8 +161,10 @@ def pool_space(pool_id):
     note_urls = {}  # key = note id, val = file path for that note id 
     for note in notes:  
         note_urls[note.notes_id] = get_note_file(note.file_path)
+    
+    chat_messages = Message.get_pool_messages(pool_id)
 
-    return render_template('pool_space.html', title=pool.group_name, pool=pool, members=members, notes=notes, note_urls=note_urls)
+    return render_template('pool_space.html', title=pool.group_name, pool=pool, members=members, notes=notes, note_urls=note_urls, chat_messages=chat_messages)
 
 
 @app.route("/join_pool")
@@ -184,6 +186,31 @@ def join_pool_action(pool_id):
         db.session.commit()
         flash(f'Joined "{pool.group_name}"!', 'success')
     return redirect(url_for('pool_space', pool_id=pool_id))
+
+@app.route("/pool_space/<int:pool_id>/message", methods=['POST'])
+@login_required
+def send_message(pool_id):
+    # saves a chat message for this pool and broadcasts it live via pusher to everyone viewing the pool
+    membership = GroupMembership.query.filter_by(group_id=pool_id, user_id=current_user.user_id).first()
+    if not membership: 
+        return {'error': 'You are not a member of this pool'}, 403
+    
+    text = request.form.get('text', '').strip()
+    if not text:
+        return {'error': 'Empty message'}, 400
+    
+    if len(text) > 1000:
+        return {'error': 'Message too long'}, 400
+
+    message = Message.create_message(pool_id, current_user.user_id, text)
+
+    pusher_client.trigger(f'pool-{pool_id}', 'new-message', {
+        'username': current_user.username,
+        'text': message.text,
+        'time_sent': message.time_sent.strftime('%I:%M %p')
+    })
+
+    return {'success': True}, 200
 
 
 @app.route("/api/summarize", methods=['POST'])
@@ -231,6 +258,7 @@ def webhook():
         return 'Updated PythonAnywhere successfully', 200
     else:
         return 'Wrong event type', 400
+
 
 
 if __name__ == '__main__':               # this should always be at the end
