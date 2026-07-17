@@ -156,6 +156,9 @@ class Message(db.Model):
     text = db.Column(db.String(1000), nullable=False)
     time_sent = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
+    user = db.relationship("User")
+    
+
     #Create message and store in the database
     def create_message(group_id, user_id, text):
         msg = Message(group_id=group_id, user_id=user_id, text=text)

@@ -33,6 +33,7 @@
         const expandBtn = document.getElementById('expand-toggle-btn');
         const collapseBtn = document.getElementById('collapse-toggle-btn');
 
+        // --- 1. UI Window Layout Controls ---
         if (chatStreamBox) {
             chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
         }
@@ -52,5 +53,31 @@
             expandBtn.textContent = chatPanel.classList.contains('is-expanded') ? '⤡' : '⤢';
             setTimeout(() => { chatStreamBox.scrollTop = chatStreamBox.scrollHeight; }, 150);
         });
+
+        // --- 2. Live WebSockets Real-time Integration (Pusher) ---
+        const pusher = new Pusher("{{ pusher_key }}", {
+            cluster: "{{ pusher_cluster }}"
+        });
+
+        const channel = pusher.subscribe('pool-' + POOL_ID);
+
+        channel.bind('new-message', function(data) {
+            const div = document.createElement('div');
+            div.className = `chat-container ${data.username === CURRENT_USERNAME ? 'outgoing' : 'incoming'}`;
+            div.innerHTML = `<span class="chat-sender">${data.username}</span><p>${data.text}</p><span class="chat-time">${data.time_sent}</span>`;
+            chatStreamBox.appendChild(div);
+            chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+        });
+
+        // --- 3. Dynamic AJAX Message Interception ---
+        document.getElementById('chat-input-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('message-input-field');
+            const formData = new FormData();
+            formData.append('text', input.value);
+
+            await fetch(`/pool_space/${POOL_ID}/message`, { method: 'POST', body: formData });
+            input.value = '';
+        };
     });
 </script>
