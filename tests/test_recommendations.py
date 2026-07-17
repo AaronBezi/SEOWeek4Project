@@ -5,7 +5,7 @@ from api.openAI_api import generate_summary,download_file,extract_text
 from database.models import Notes,User, DocumentAnalysis, create_Doc_Analysis
 from types import SimpleNamespace
 from api.recommendations.books_api import analyze_document, DocumentAnalysisResponse, save_document_analysis, analyze_and_save_analysis, get_group_doc_analyses, get_user_doc_analyses, build_study_profile
-
+from api.recommendations.rec_queries import gen_books
 
 #Test for recommendation workflow: Unit test + Integration Test
 #Note to self: When using mocks mock the function where it is called not defined.
@@ -231,7 +231,32 @@ class TestRecommendations:
         assert actual_result == expected_result
 
         
-
-
+class TestBooksGeneration():
+    def test_gen_books(self):
+        study_profile = {"success": True, "profile":{
+            "subjects": ["calculus", "linear algebra"],
+            "topics": ["derivatives", "limits", "integrals", "matrices"],
+            "keywords":["chain rule","limit", "integration", "matrix"],
+            "academic_level": "undergraduate",
+            "document_count": 5
+        }}
         
-        
+        parsed_response = MagicMock()
+        parsed_response.queries = [
+            "undergraduate calculus textbook",
+            "calculus derivatives textbook"
+        ]
+
+        with patch("api.recommendations.rec_queries.open_client") as mock_client:
+            mock_response = MagicMock()
+            mock_response.choices[0].message.parsed = parsed_response
+            mock_response.choices[0].message.refusal = None
+            mock_client.chat.completions.parse.return_value = mock_response
+
+            actual_result = gen_books(study_profile)
+            expected_result = {"success": True,"result": ["undergraduate calculus textbook","calculus derivatives textbook"]}
+            print(actual_result)
+            print(expected_result)
+            assert actual_result == expected_result
+            mock_client.chat.completions.parse.assert_called_once()
+
