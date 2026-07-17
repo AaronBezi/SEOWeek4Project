@@ -47,9 +47,10 @@
 
     // 1. Initialize Pusher
     // REPLACE THESE WITH YOUR KEYS
-    const pusher = new Pusher("YOUR_PUSHER_KEY_HERE", {
-        cluster: "YOUR_PUSHER_CLUSTER_HERE"
+    const pusher = new Pusher("{{pusher_key}}", {
+        cluster: "{{pusher_cluster}}"
     });
+    
     const channel = pusher.subscribe('pool-' + POOL_ID);
 
     channel.bind('new-message', function(data) {
