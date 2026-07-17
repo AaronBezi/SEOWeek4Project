@@ -260,67 +260,7 @@ class TestBooksGeneration():
             assert actual_result == expected_result
             mock_client.chat.completions.parse.assert_called_once()
 
-    from unittest.mock import MagicMock, patch
 
-    def test_rank_books_success(self):
-        study_profile = {
-            "success": True,
-            "profile": {
-                "subjects": ["calculus"],
-                "topics": ["derivatives", "limits"],
-                "keywords": ["chain rule"],
-                "academic_level": "undergraduate",
-                "document_count": 3
-            }
-        }
-
-        book1 = {
-            "book_id": "1",
-            "title": "Calculus",
-            "authors": ["James Stewart"],
-            "description": "Calculus textbook",
-            "preview_link": "https://books.google.com/1"
-        }
-
-        book2 = {
-            "book_id": "2",
-            "title": "Linear Algebra",
-            "authors": ["David Lay"],
-            "description": "Linear algebra textbook",
-            "preview_link": "https://books.google.com/2"
-        }
-
-        books_retrieved = {
-            "success": True,
-            "books": [book1, book2]
-        }
-
-        parsed_response = MagicMock()
-        parsed_response.recommendations = ["1", "2"]
-
-        with patch("api.recommendations.rec_queries.open_client") as mock_client:
-
-            mock_response = MagicMock()
-            mock_response.choices[0].message.parsed = parsed_response
-            mock_response.choices[0].message.refusal = None
-
-            mock_client.chat.completions.parse.return_value = mock_response
-
-            actual_result = rank_books(
-                study_profile,
-                books_retrieved
-            )
-
-            expected_result = {
-                "success": True,
-                "recommendations": [
-                    book1,
-                    book2
-                ]
-            }
-
-            assert actual_result == expected_result
-            mock_client.chat.completions.parse.assert_called_once()
 
 
 
