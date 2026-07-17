@@ -5,12 +5,18 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from typing import Literal
 from pydantic import BaseModel, Field  #This allows us to get correctly formatted json responses back
+from database.models import DocumentAnalysis,create_Doc_Analysis, Notes
+from database.database import db
+from collections import Counter
+
+
 
 load_dotenv()
 open_client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
-books_client = "abc"
+books_client = os.getenv("BOOKS_KEY")
 
-class DocumentAnalysis(BaseModel):
+#provides the structure for the output of the open ai response.
+class DocumentAnalysisResponse(BaseModel):
     subject: str = Field(description="The academic subject discussed in the document")
     topics: list[str] = Field(min_length=1,max_length=10,description = "The major concepts described in the document")
     keywords: list[str] = Field(min_length=1,max_length=15,description="Important technical terms discussed in the document")
@@ -20,7 +26,7 @@ class DocumentAnalysis(BaseModel):
     summary: str=Field(description="A concise summary of the document's academic content")
 
 
-
+#--------------------------------------------PHASE 1: PARSING DOCUMENTS FOR METADATA FOR GOOGLE BOOKS API---------------------------
 #Takes a note from supabase storage extracts its contents and pass into openai api to get metadata for books api
 def analyze_document(note):
     if not note:
@@ -48,7 +54,7 @@ def analyze_document(note):
                                                 f"{document_text}"
                         )}
             ],
-            response_format =DocumentAnalysis,
+            response_format =DocumentAnalysisResponse,
         )
         message = response.choices[0].message
         if message.parsed is None:
@@ -58,3 +64,157 @@ def analyze_document(note):
 
     except Exception as e:
         return {"success": False, "error": str(e)}
+    
+
+
+#------------------------------------PHASE 2: SAVE DOCUMENT ANALYSIS TO DATABASE-----------------------------------------
+#Saves document analysis for users/groups notes to database
+def save_document_analysis(note,analysis):
+    if not note:
+        return {"success": False, "error": "Note is empty"}
+
+    if not isinstance(analysis,dict):
+        return {"success": False, "error": "Invalid analysis result"}
+    #analysis failed or is empty
+    if not analysis or not analysis.get("success"):
+        return {"success": False, "error": analysis.get("error","Document analysis failed")}
+    
+    metadata = analysis.get("result")
+
+    if not metadata:
+        return {"success": False, "error": "metadata is empty"}
+
+    try:
+        if not note.notes_id:
+            return {"success": False, "result": "Notes ID is not correct"}
+        analysis_exist = DocumentAnalysis.query.filter_by(note_id = note.notes_id).first()
+
+        #anlysis for this note exist just add the existing data
+        if analysis_exist:
+            analysis_exist.subject = metadata['subject']
+            analysis_exist.topics = metadata['topics']
+            analysis_exist.keywords = metadata['keywords']
+            analysis_exist.academic_level = metadata['academic_level']
+            analysis_exist.summary = metadata['summary']
+        else:
+            analysis_exist = create_Doc_Analysis(note.notes_id,metadata)
+        
+            db.session.add(analysis_exist)
+        db.session.commit()
+        
+        return {"success": True, "analysis_id": analysis_exist.analysis_id}
+    
+    except KeyError as error:
+        db.session.rollback()
+        return {"success": False, "error": f"Missing analysis field: {error.args[0]}"}
+    
+    except Exception as e:
+        db.session.rollback()
+        return {"success": False, "error": str(e)}
+
+#-----------------------------PHASE 3: COMBINE ANALYZE AND SAVE DOCUEMNTS-------------------------
+def analyze_and_save_analysis(note):
+    #Generate an analysis for a given note then save the analysis to the database
+    analysis = analyze_document(note)
+    #if analysi sfailed return the error message
+    if not analysis.get("success"):
+        return analysis
+    
+    return save_document_analysis(note,analysis)
+
+
+#------------------------PHASE 4: Combine the document analysis for a user or gorup study pool to use as a study profile-----
+def get_user_doc_analyses(user_id):
+    if not user_id: return {"success": False, "error": "User ID is missing"}
+
+    try:
+        #generate users 10 most recent uploads to use for reccomendation
+        user_analyses = db.session.query(DocumentAnalysis
+                                         ).join(Notes,DocumentAnalysis.note_id == Notes.notes_id
+                                                ).filter(Notes.user_id == user_id,Notes.group_id.is_(None)
+                                                         ).order_by(Notes.time_uploaded.desc()).limit(10).all()
+        #if empty retr=urn error
+        if not user_analyses:
+            return {"success": False, "error": "No analyzed notes found for the user"}
+        
+        return {"success": True, "analyses": user_analyses}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    
+
+def get_group_doc_analyses(group_id):
+    if not group_id:
+        return {"success": False, "error": "Group ID does not exist"}
+
+    try:
+        #generate users 10 most recent uploads to use for reccomendation
+        group_analyses = db.session.query(DocumentAnalysis
+                                         ).join(Notes,DocumentAnalysis.note_id == Notes.notes_id
+                                                ).filter(Notes.group_id== group_id
+                                                         ).order_by(Notes.time_uploaded.desc()).limit(10).all()
+        #if empty retr=urn error
+        if not group_analyses:
+            return {"success": False, "error": "No analyzed notes found for this group"}
+        
+        return {"success": True, "analyses": group_analyses}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+#Combine the queries for the users documents to build a profile for the reccomendation
+def build_study_profile(analyses_result):
+    if not analyses_result:
+        return {"success": False, "error": "Could not retrieve document analyses"}
+    
+    if not analyses_result.get("success"):
+        return {"success": False, "error": analyses_result.get("error","Could not retrieve document analyses")}
+    
+    analyses = analyses_result.get("analyses")
+
+    if not analyses:
+        return {"success": False, "error": "No document analyses were provided"}
+    
+    #idea: we do a similarity between the data for each note counting them to build the weights
+    subject_count = Counter()
+    topic_count = Counter()
+    keyword_count = Counter()
+    academic_level_count = Counter()
+
+    for analysis in analyses:
+        subject_count[analysis.subject.strip().lower()]+=1
+        topic_count.update(topic.strip().lower() for topic in analysis.topics)
+        keyword_count.update(keyword.strip().lower() for keyword in analysis.keywords)
+        academic_level_count[analysis.academic_level.strip().lower()]+=1
+    
+    profile = {
+        #We get the top k most common ocunts for each attribute
+        "subjects": [subject for subject,_ in subject_count.most_common(5)],
+        "topics": [topic for topic,_ in topic_count.most_common(7)],
+        "keywords": [keyword for keyword,_ in keyword_count.most_common(15)],
+        "academic_level": (academic_level_count.most_common(1)[0][0]),
+        "document_count": len(analyses)
+    }
+
+    return {"success": True, "profile": profile}
+
+#Combine the functions and create a study profile for the books api
+def create_user_study_profile(user_id):
+    analyses_result = get_user_doc_analyses(user_id)
+    if not analyses_result.get("success"):
+        return analyses_result
+    
+    return build_study_profile(analyses_result)
+
+def create_group_study_profile(group_id):
+    analyses_result = get_group_doc_analyses(group_id)
+    if not analyses_result.get("success"):
+        return analyses_result
+    return build_study_profile(analyses_result)
+
+
+
+
+            
+
+    
+

@@ -1,8 +1,8 @@
-#Ignore files API KEYS, DATABASE SECRETS
+#Ignore files API KEYS, DATABASE SECRETS, MOCK TEST FUNCTIONS
 .env
 .venv
-*.db 
+*.db
 __pycache__
 .pytest_cache
-
+test_mocks.py
 .idea/
