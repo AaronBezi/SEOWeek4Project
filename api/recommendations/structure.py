@@ -7,16 +7,16 @@ class BookSearchQueriesResponse(BaseModel):
         description="Textbook search queries based on the study profile"
     )
 
-#structure for ranking books from books api
-class RankedBook(BaseModel):
-    book_id: str
-    score: int = Field(ge=0,le=100)
+# #structure for ranking books from books api   #no LONGER NEED NOT RETURNING SCORES ANYMORE TOO MUCH TIME
+# class RankedBook(BaseModel):
+#     book_id: str
+#     score: int = Field(ge=0,le=100)
 
 class BookRankingResponse(BaseModel):
-    recommendations: list[RankedBook] = Field(
+    recommendations: list[str] = Field(
         min_length=1,
         max_length=5,
-        description="Top ranked books returned from the Google Books candidates")
+        description="The IDs of the five best matching books.")
 
 
 

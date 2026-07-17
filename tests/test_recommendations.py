@@ -5,7 +5,7 @@ from api.openAI_api import generate_summary,download_file,extract_text
 from database.models import Notes,User, DocumentAnalysis, create_Doc_Analysis
 from types import SimpleNamespace
 from api.recommendations.books_api import analyze_document, DocumentAnalysisResponse, save_document_analysis, analyze_and_save_analysis, get_group_doc_analyses, get_user_doc_analyses, build_study_profile
-from api.recommendations.rec_queries import gen_books, search_books, retrieve_books
+from api.recommendations.rec_queries import gen_books, search_books, retrieve_books, rank_books
 
 #Test for recommendation workflow: Unit test + Integration Test
 #Note to self: When using mocks mock the function where it is called not defined.
@@ -260,7 +260,67 @@ class TestBooksGeneration():
             assert actual_result == expected_result
             mock_client.chat.completions.parse.assert_called_once()
 
-   
+    from unittest.mock import MagicMock, patch
+
+    def test_rank_books_success(self):
+        study_profile = {
+            "success": True,
+            "profile": {
+                "subjects": ["calculus"],
+                "topics": ["derivatives", "limits"],
+                "keywords": ["chain rule"],
+                "academic_level": "undergraduate",
+                "document_count": 3
+            }
+        }
+
+        book1 = {
+            "book_id": "1",
+            "title": "Calculus",
+            "authors": ["James Stewart"],
+            "description": "Calculus textbook",
+            "preview_link": "https://books.google.com/1"
+        }
+
+        book2 = {
+            "book_id": "2",
+            "title": "Linear Algebra",
+            "authors": ["David Lay"],
+            "description": "Linear algebra textbook",
+            "preview_link": "https://books.google.com/2"
+        }
+
+        books_retrieved = {
+            "success": True,
+            "books": [book1, book2]
+        }
+
+        parsed_response = MagicMock()
+        parsed_response.recommendations = ["1", "2"]
+
+        with patch("api.recommendations.rec_queries.open_client") as mock_client:
+
+            mock_response = MagicMock()
+            mock_response.choices[0].message.parsed = parsed_response
+            mock_response.choices[0].message.refusal = None
+
+            mock_client.chat.completions.parse.return_value = mock_response
+
+            actual_result = rank_books(
+                study_profile,
+                books_retrieved
+            )
+
+            expected_result = {
+                "success": True,
+                "recommendations": [
+                    book1,
+                    book2
+                ]
+            }
+
+            assert actual_result == expected_result
+            mock_client.chat.completions.parse.assert_called_once()
 
 
 
