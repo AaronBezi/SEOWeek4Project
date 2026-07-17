@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Pool - Smart Recommendations Sandbox</title>
+
+    <!-- key fonts used throughout -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/recs.css') }}">
+
+</head>
+<body>
+
+    <div id="recommendations-view" class="view active">
+        <!-- study pool style header -->
+        <header>
+            <div class="logo">STUDY POOL</div>
+            <div class="pool-title">Browse Recommendations</div>
+        </header>
+
+        <div class="workspace-container">
+            <main class="notes-section">
+
+                <!-- layout switcher header -->
+                <div class="section-header-controls">
+                    <h2>Recommended Sources</h2>
+                    <button class="layout-toggle-btn" onclick="toggleLayoutMode()">Layout</button>
+                </div>
+
+                <!-- search bar -->
+                <div class="search-container">
+                    <input
+                        type="text"
+                        id="search-input"
+                        class="search-input"
+                        placeholder="Search for key elements ..."
+                        oninput="runLiveSearch()"
+                    >
+                    <button class="capsule-btn" onclick="runLiveSearch()" style="background-color: var(--bg-color); color: #ffffff;">Search</button>
+                </div>
+
+                <!-- switches layouts seamlessly -->
+                <div class="book-list" id="book-feed">
+                </div>
+            </main>
+        </div>
+
+        <a class="auth-back-link" href="#">Back to home</a>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+
+</body>
+</html>
