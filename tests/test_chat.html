@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
 
   <style>
-        /* --- YOUR EXACT PLATFORM CSS THEME --- */
+        
         :root {
             --bg-color: #1F628E;
             --btn-bg: #2d3748;
@@ -65,7 +65,6 @@
             text-shadow: 1px 0px 0px currentColor, -1px 0px 0px currentColor;
         }
 
-        /* Full landscape size layout, allowing the chat box to layer on top smoothly */
         .workspace-container {
             display: flex;
             flex-direction: column;
@@ -190,9 +189,7 @@
         .member-list li { padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 15.2px; }
         .auth-back-link { display: block; margin-top: 16px; color: #ffffff; font-size: 14px; text-decoration: none; }
 
-        /* ==========================================================================
-           FLOATING / OVERLAPPING CHAT MODULE WITH HIGHER Z-INDEX
-           ========================================================================== */
+        /* FLOATING / OVERLAPPING CHAT MODULE WITH HIGHER Z-INDEX */
         .chat-section {
             position: fixed;
             bottom: 40px;
@@ -357,7 +354,7 @@
 
         chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
 
-        // 1. Minimize / Collapse Event
+        // Minimize / Collapse Event
         chatHeader.addEventListener('click', (e) => {
             if (e.target === expandBtn) return;
             chatPanel.classList.remove('is-expanded');
@@ -365,7 +362,7 @@
             collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
         });
 
-        // 2. Expand / Maximize Size Toggler Event
+        // Expand / Maximize Size Toggler Event
         expandBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             chatPanel.classList.remove('is-collapsed');
@@ -375,7 +372,7 @@
             setTimeout(() => { chatStreamBox.scrollTop = chatStreamBox.scrollHeight; }, 150);
         });
 
-        // 3. Simulated Chat Submit Flow
+        // Simulated Chat Submit Flow
         document.getElementById('chat-input-form').onsubmit = function(e) {
             e.preventDefault();
             const input = document.getElementById('message-input-field');
