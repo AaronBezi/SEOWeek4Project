@@ -1,0 +1,56 @@
+<aside class="chat-section" id="chat-panel">
+    <div class="chat-header-bar" id="chat-header">
+        <h2>Pool Chat</h2>
+        <div class="chat-controls">
+            <button class="chat-toggle-btn" id="expand-toggle-btn" title="Toggle Size">⤢</button>
+            <button class="chat-toggle-btn" id="collapse-toggle-btn" title="Minimize">−</button>
+        </div>
+    </div>
+    <div class="chat-body">
+        <div class="chat-history" id="chat-stream-box">
+            {% if chat_messages %}
+                {% for msg in chat_messages %}
+                    <div class="chat-container {% if msg.user_id == current_user.user_id %}outgoing{% else %}incoming{% endif %}">
+                        <span class="chat-sender">{{ msg.username }}</span>
+                        <p>{{ msg.message_text }}</p>
+                        <span class="chat-time">{{ msg.timestamp.strftime('%I:%M %p') }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <form class="chat-input-form" id="chat-input-form" method="POST" action="{{ url_for('send_chat_message', pool_id=pool.pool_id) if pool else '#' }}">
+            <input type="text" id="message-input-field" name="message" class="text-input" placeholder="Type a message..." required autocomplete="off">
+            <button type="submit" class="chat-send-btn">Send</button>
+        </form>
+    </div>
+</aside>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const chatPanel = document.getElementById('chat-panel');
+        const chatHeader = document.getElementById('chat-header');
+        const chatStreamBox = document.getElementById('chat-stream-box');
+        const expandBtn = document.getElementById('expand-toggle-btn');
+        const collapseBtn = document.getElementById('collapse-toggle-btn');
+
+        if (chatStreamBox) {
+            chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+        }
+
+        chatHeader.addEventListener('click', (e) => {
+            if (e.target === expandBtn || e.target === collapseBtn) return;
+            chatPanel.classList.remove('is-expanded');
+            chatPanel.classList.toggle('is-collapsed');
+            collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
+        });
+
+        expandBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            chatPanel.classList.remove('is-collapsed');
+            collapseBtn.textContent = '−';
+            chatPanel.classList.toggle('is-expanded');
+            expandBtn.textContent = chatPanel.classList.contains('is-expanded') ? '⤡' : '⤢';
+            setTimeout(() => { chatStreamBox.scrollTop = chatStreamBox.scrollHeight; }, 150);
+        });
+    });
+</script>

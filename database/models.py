@@ -117,6 +117,7 @@ class GroupMembership(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
     time_joined = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
+<<<<<<< HEAD
 
 #Database schema to store document analysis for recommendation engine
 #generate document analysis for each note then query them combining into a study profile for recommendations
@@ -145,3 +146,25 @@ def create_Doc_Analysis(note_id,metadata):
 
     
 
+=======
+#Message Schema
+class Message(db.Model):
+    __tablename__ = "messages"
+    message_id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("study_groups.group_id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
+    text = db.Column(db.String(1000), nullable=False)
+    time_sent = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+
+    #Create message and store in the database
+    def create_message(group_id, user_id, text):
+        msg = Message(group_id=group_id, user_id=user_id, text=text)
+        db.session.add(msg)
+        db.session.commit()
+        return msg
+
+    #returns most recent messages for a pool, oldest first to display
+    def get_pool_messages(group_id, limit=50):
+        rows = Message.query.filter_by(group_id=group_id).order_by(Message.time_sent.desc()).limit(limit).all()
+        return list(reversed(rows))
+>>>>>>> Website-Sheyla
