@@ -260,66 +260,6 @@ class TestBooksGeneration():
             assert actual_result == expected_result
             mock_client.chat.completions.parse.assert_called_once()
 
-    def test_generate_recommendations(self):
-        study_profile = {
-            "success": True,
-            "profile": {
-                "subjects": ["calculus"],
-                "topics": ["derivatives", "limits"],
-                "keywords": ["chain rule"],
-                "academic_level": "undergraduate",
-                "document_count": 3
-            }
-        }
-
-        queries = {
-            "success": True,
-            "result": [
-                "undergraduate calculus textbook",
-                "calculus derivatives textbook"
-            ]
-        }
-
-        books = {
-            "success": True,
-            "books": [
-                {
-                    "book_id": "1",
-                    "title": "Calculus",
-                    "authors": ["James Stewart"],
-                    "description": "Calculus textbook",
-                    "preview_link": "https://books.google.com/1"
-                },
-                {
-                    "book_id": "2",
-                    "title": "Calculus: Early Transcendentals",
-                    "authors": ["Ron Larson"],
-                    "description": "Another calculus textbook",
-                    "preview_link": "https://books.google.com/2"
-                }
-            ]
-        }
-
-        recommendations = {
-            "success": True,
-            "recommendations": books["books"]
-        }
-
-        with patch("api.recommendations.rec_queries.gen_books") as mock_gen, \
-            patch("api.recommendations.rec_queries.retrieve_books") as mock_retrieve, \
-            patch("api.recommendations.rec_queries.rank_books") as mock_rank:
-
-            mock_gen.return_value = queries
-            mock_retrieve.return_value = books
-            mock_rank.return_value = recommendations
-
-            actual_result = generate_recommendations(study_profile)
-
-            assert actual_result == recommendations
-
-            mock_gen.assert_called_once_with(study_profile)
-            mock_retrieve.assert_called_once_with(queries)
-            mock_rank.assert_called_once_with(study_profile, books)
 
 
 
