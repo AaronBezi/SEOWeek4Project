@@ -1,4 +1,4 @@
-/* key elements to the theme */
+/* KEY THEME ELEMENTS */
 :root {
     --bg-color: #1F628E;
     --btn-bg: #2d3748;
@@ -199,7 +199,7 @@ header {
     align-items: flex-start;
 }
 
-/* task buttons on white board */
+/* TASK BUTTONS */
 .task-btn {
     background-color: var(--btn-bg);
     color: #ffffff;
@@ -258,7 +258,7 @@ header {
     transition-delay: 0.1s;
 }
 
-/* "White Board - area where people upload their notes" */
+/* "WHITE BOARD - area where people upload their notes" */
 .notes-section {
     background: #ffffff;
     color: var(--text-dark);
@@ -285,7 +285,7 @@ header {
     font-size: 17.6px;
 }
 
-/* pool space page */
+/* POOL SPACES PAGE */
 .pool-title {
     font-family: 'Geist Pixel', sans-serif;
     font-size: 22.4px;
@@ -393,7 +393,7 @@ header {
     font-size: 14.4px;
 }
 
-/* register / auth page */
+/* REGISTER/AUTH PAGE */
 .auth-card {
     width: 100%;
     max-width: 420px;
@@ -496,3 +496,4 @@ footer {
     border-top: 1px solid rgba(255,255,255,0.05);
     letter-spacing: 0.5px;
 }
+
