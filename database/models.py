@@ -1,6 +1,6 @@
 from .database import db
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import func, JSON
 from flask_login import LoginManager, current_user, UserMixin, login_user
 #File used to create Schemas for the database
 
@@ -117,6 +117,36 @@ class GroupMembership(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
     time_joined = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
+<<<<<<< HEAD
+
+#Database schema to store document analysis for recommendation engine
+#generate document analysis for each note then query them combining into a study profile for recommendations
+class DocumentAnalysis(db.Model):
+    __tablename__ = "document_analysis"
+    analysis_id = db.Column(db.Integer, primary_key=True)
+    note_id = db.Column(db.Integer,db.ForeignKey("notes.notes_id"),nullable=False,unique=True)
+    subject = db.Column(db.JSON,nullable=False)
+    topics = db.Column(db.JSON, nullable=False)
+    keywords = db.Column(db.JSON, nullable=False)
+    academic_level = db.Column(db.String(150),nullable=False)
+    summary = db.Column(db.Text,nullable=False)
+
+#metadata containing the sibject,topics,keywords,academic_level,summary
+def create_Doc_Analysis(note_id,metadata):
+    return DocumentAnalysis(note_id = note_id,subject=metadata['subject'],
+                            topics = metadata['topics'],
+                            keywords = metadata['keywords'],
+                            academic_level = metadata['academic_level'],
+                            summary = metadata['summary']
+                            )
+
+
+    
+
+
+    
+
+=======
 #Message Schema
 class Message(db.Model):
     __tablename__ = "messages"
@@ -140,3 +170,4 @@ class Message(db.Model):
     def get_pool_messages(group_id, limit=50):
         rows = Message.query.filter_by(group_id=group_id).order_by(Message.time_sent.desc()).limit(limit).all()
         return list(reversed(rows))
+>>>>>>> Website-Sheyla

@@ -355,6 +355,9 @@ header {
     padding: 8px 0;
     border-bottom: 1px solid #e2e8f0;
     font-size: 15.2px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .pool-list {
