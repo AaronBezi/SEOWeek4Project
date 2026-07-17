@@ -173,7 +173,7 @@ def pool_space(pool_id):
     members = User.query.join(GroupMembership, User.user_id == GroupMembership.user_id).filter(GroupMembership.group_id == pool_id).all()
     notes = Notes.query.filter_by(group_id=pool_id).all()  # a list of note objects 
     note_urls = {}  # key = note id, val = file path for that note id 
-    for note in notes:  
+    for note in notes:
         note_urls[note.notes_id] = get_note_file(note.file_path)
 
     return render_template('pool_space.html', title=pool.group_name, pool=pool, members=members, notes=notes, note_urls=note_urls)
