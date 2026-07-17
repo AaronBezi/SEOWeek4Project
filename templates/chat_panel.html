@@ -1,0 +1,73 @@
+<style>
+    /* Chat Panel Styling */
+    .chat-section {
+        font-family: 'Sofia Sans', sans-serif;
+        position: fixed; bottom: 40px; right: 40px;
+        background: #ffffff; color: #0A0A0A;
+        border-radius: 16px; box-shadow: 0 12px 45px rgba(0,0,0,0.3);
+        display: flex; flex-direction: column;
+        width: 380px; height: 520px; overflow: hidden; z-index: 1000;
+    }
+    .chat-header-bar { background-color: #263238; color: #ffffff; padding: 14px 20px; }
+    .chat-body { display: flex; flex-direction: column; flex: 1; padding: 16px; overflow: hidden; }
+    .chat-history { flex: 1; overflow-y: auto; margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px; }
+    .chat-container { border-radius: 12px; padding: 10px 14px; max-width: 80%; display: flex; flex-direction: column; }
+    .chat-container.incoming { background-color: #E5E7EB; align-self: flex-start; }
+    .chat-container.outgoing { background-color: #5D6D7E; color: #ffffff; align-self: flex-end; }
+    .chat-sender { font-size: 11px; font-weight: bold; margin-bottom: 2px; }
+    .chat-input-form { display: flex; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 12px; }
+    .text-input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #d1d5db; }
+    .chat-send-btn { background-color: #263238; color: #ffffff; border: none; padding: 0 18px; border-radius: 8px; cursor: pointer; }
+</style>
+
+<aside class="chat-section">
+    <div class="chat-header-bar"><h2>Pool Chat</h2></div>
+    <div class="chat-body">
+        <div class="chat-history" id="chat-stream-box">
+            {% for msg in chat_messages %}
+                <div class="chat-container {{ 'outgoing' if msg.user_id == current_user.user_id else 'incoming' }}">
+                    <span class="chat-sender">{{ msg.user.username }}</span>
+                    <p>{{ msg.text }}</p>
+                    <span class="chat-time">{{ msg.time_sent.strftime('%I:%M %p') }}</span>
+                </div>
+            {% endfor %}
+        </div>
+        <form class="chat-input-form" id="chat-input-form">
+            <input type="text" id="message-input-field" class="text-input" placeholder="Type a message..." required>
+            <button type="submit" class="chat-send-btn">Send</button>
+        </form>
+    </div>
+</aside>
+
+<script>
+    const POOL_ID = "{{ pool.group_id }}";
+    const CURRENT_USERNAME = "{{ current_user.username }}";
+    const chatStreamBox = document.getElementById('chat-stream-box');
+    chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+
+    // 1. Initialize Pusher
+    // REPLACE THESE WITH YOUR KEYS
+    const pusher = new Pusher("YOUR_PUSHER_KEY_HERE", {
+        cluster: "YOUR_PUSHER_CLUSTER_HERE"
+    });
+    const channel = pusher.subscribe('pool-' + POOL_ID);
+
+    channel.bind('new-message', function(data) {
+        const div = document.createElement('div');
+        div.className = `chat-container ${data.username === CURRENT_USERNAME ? 'outgoing' : 'incoming'}`;
+        div.innerHTML = `<span class="chat-sender">${data.username}</span><p>${data.text}</p><span class="chat-time">${data.time_sent}</span>`;
+        chatStreamBox.appendChild(div);
+        chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+    });
+
+    // 2. Handle Send
+    document.getElementById('chat-input-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const input = document.getElementById('message-input-field');
+        const formData = new FormData();
+        formData.append('text', input.value);
+
+        await fetch(`/pool_space/${POOL_ID}/message`, { method: 'POST', body: formData });
+        input.value = '';
+    };
+</script>
