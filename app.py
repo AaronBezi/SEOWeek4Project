@@ -3,7 +3,7 @@ from flask_behind_proxy import FlaskBehindProxy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from forms import RegistrationForm, LoginForm, CreatePoolForm, JoinPoolForm
-from database.models import User,Notes,Notes_Summary, StudyGroup, GroupMembership
+from database.models import User, Notes, Notes_Summary, StudyGroup, GroupMembership
 from database.database import db
 from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
 from api.openAI_api import generate_summary
@@ -237,9 +237,6 @@ def summarize():
     # return {'success': True, 'summary': result['summary']}, 200
 
 
-
-
-
 @app.route("/update_server", methods=['POST'])
 def webhook():
     if request.method == 'POST':
@@ -255,6 +252,25 @@ def webhook():
         return 'Updated PythonAnywhere successfully', 200
     else:
         return 'Wrong event type', 400
+
+
+@app.route("/pool_space/<int:pool_id>/kick/<int:user_id>", methods=['POST'])
+@login_required
+def kick_member(pool_id, user_id):
+    pool = StudyGroup.query.get_or_404(pool_id)
+    user = User.query.get_or_404(user_id)
+    
+    if current_user.user_id == pool.created_by and user_id != current_user.user_id:
+        membership = GroupMembership.query.filter_by(group_id=pool_id, user_id=user_id).first()
+        if membership:
+            db.session.delete(membership)
+            db.session.commit()
+            flash(f'"{user.username}" was removed from your group', 'success')
+    else:
+        flash('Failed to remove user', 'error')
+
+    return redirect(url_for('pool_space', pool_id=pool_id))
+        
 
 
 if __name__ == '__main__':               # this should always be at the end
