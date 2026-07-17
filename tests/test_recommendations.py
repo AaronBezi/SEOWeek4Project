@@ -48,4 +48,26 @@ class TestRecommendations:
             mock_download.assert_called_once_with(note)
             mock_extract.assert_called_once_with(b"%PDF-1.4 FINAL TEST FAKE FAKE FAKE","pdf")
             mock_client.chat.completions.parse.assert_called_once()
-            
+
+
+    def test_analyze_document_whitespace(self):
+    #Tests calling with blank documents: should not be able to parse
+        note = MagicMock()
+        note.file_path = "templates/calc.png"
+
+        with patch("api.recommendations.books_api.open_client") as mock_client, \
+        patch("api.recommendations.books_api.download_file") as mock_download, \
+        patch("api.recommendations.books_api.extract_text") as mock_extract:
+
+            mock_download.return_value = (b"%PDF-1.4 FINAL TEST FAKE FAKE FAKE","png")
+            mock_extract.return_value = "            "
+        
+            result = analyze_document(note)
+
+            #inputting with empty whitespace should output No document found
+            print(result)
+            assert result == {
+                "success": False,
+                "error": "No document found to analyze."
+            }
+            mock_client.chat.completions.parse.assert_not_called()
