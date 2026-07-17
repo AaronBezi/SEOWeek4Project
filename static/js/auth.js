@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const notesContent = document.getElementById('notes-content');
     const summaryContent = document.getElementById('summary-content');
 
-    #WIRE FRAMED FUNCTIONS IN RECOMMENDATIONS.HTML DELETE THIS COMMENT ONCE DONE
+    // WIRE FRAMED FUNCTIONS IN RECOMMENDATIONS.HTML DELETE THIS COMMENT ONCE DONE
     const bookFeed = document.getElementById('book-feed');
 
     if (uploadBtn) {
