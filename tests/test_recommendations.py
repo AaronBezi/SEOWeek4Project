@@ -133,7 +133,31 @@ class TestRecommendations:
 
 
     #Integration test with analyze document then saving it to the database
-    def test_save_analysis_invalid_input(self):
+    def test_analyze_and_save_analysis(self):
         #reccomendation engine 
+        note = MagicMock()
+        analysis = { "success": True,
+        "result": {
+                "subject": "Calc2",
+                "topics": ["Series", "Sequences"],
+                "keywords": ["ratio test", "divergence"],
+                "academic_level" :"undergraduate",
+                "summary" :"Notes the ratio test and divergence test"
+        }}
+
+        expected_result = {"success": True, "analysis_id": 21}
+
+        with patch("api.recommendations.books_api.analyze_document") as mock_analyze, \
+        patch("api.recommendations.books_api.save_document_analysis") as mock_save:
+            
+            mock_analyze.return_value = analysis
+            mock_save.return_value = expected_result
+
+            actual_result = analyze_and_save_analysis(note)
+
+            assert actual_result == {"success": True, "analysis_id": 21}
+            mock_analyze.assert_called_once_with(note)
+            mock_save.assert_called_once_with(note,analysis)
+
         
         
