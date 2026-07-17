@@ -2,12 +2,11 @@ from flask import Flask, render_template, url_for, flash, redirect, request
 from flask_behind_proxy import FlaskBehindProxy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from forms import RegistrationForm, LoginForm, CreatePoolForm, JoinPoolForm
+from forms import RegistrationForm, LoginForm, CreatePoolForm
 from database.models import User,Notes,Notes_Summary, StudyGroup, GroupMembership
 from database.database import db
-from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
+from storage import allowed_file, upload_note_file, get_note_file
 from api.openAI_api import generate_summary
-import secrets
 import git
 import os
 import subprocess
@@ -105,7 +104,6 @@ def upload():
 
     storage_note_id,filepath = upload_note_file(file)
     Notes.create_Note(current_user.user_id,file.filename,filepath,group_id)      #saves note to database
-    flash('Note uploaded successfully!', 'success')
     return {'storage_note_id': storage_note_id}, 200
 
 
@@ -121,36 +119,15 @@ def my_notes():
     return render_template('my_notes.html', title='My Notes', notes=notes, my_pools=my_pools, note_urls=note_urls)
 
 
-@app.route("/notes/<int:note_id>/delete", methods=['POST'])
-@login_required
-def delete_note(note_id):
-    note = Notes.query.get_or_404(note_id)
-    if note.group_id: # if the note belongs to a group
-        pool = StudyGroup.query.get(note.group_id)
-    else:
-        pool = None
-    
-    if (pool is not None and current_user.user_id == pool.created_by) or current_user.user_id == note.user_id:
-        delete_note_file(note.file_path)
-        db.session.delete(note)
-        db.session.commit()
-        flash(f'Note deleted!', 'success')
-    else:
-        return {'error': 'You are not authorized to delete this document'}, 400
-
-    return redirect(request.referrer or url_for('my_notes'))  # return to whichever page prompted the deletion 
-
-
 @app.route("/create_pool", methods=['POST', 'GET'])
 @login_required
 def create_pool():
     form = CreatePoolForm()
     if form.validate_on_submit(): # checks if entries are valid
-        pool = StudyGroup(group_name=form.group_name.data, created_by=current_user.user_id, is_private=form.is_private.data)
-        if pool.is_private:
-            pool.invite_code = secrets.token_urlsafe(6)
+        pool = StudyGroup(group_name=form.group_name.data, created_by=current_user.user_id)
         db.session.add(pool)
         db.session.commit()  # commit so pool.group_id actually gets assigned. 
+
         membership = GroupMembership(group_id=pool.group_id, user_id=current_user.user_id)
         db.session.add(membership)
         db.session.commit()
@@ -182,31 +159,21 @@ def pool_space(pool_id):
 @app.route("/join_pool")
 @login_required
 def join_pool():
-    form = JoinPoolForm()
     pools = db.session.query(StudyGroup, User.username).join(User, StudyGroup.created_by == User.user_id).all()
     my_membership_ids = {m.group_id for m in GroupMembership.query.filter_by(user_id=current_user.user_id).all()}
-    return render_template('join_pool.html', title='Join a Pool', pools=pools, my_membership_ids=my_membership_ids, form=form)
+    return render_template('join_pool.html', title='Join a Pool', pools=pools, my_membership_ids=my_membership_ids)
 
 
 @app.route("/join_pool/<int:pool_id>/join", methods=['POST'])
 @login_required
 def join_pool_action(pool_id):
-    form = JoinPoolForm()
     pool = StudyGroup.query.get_or_404(pool_id)
-
     existing = GroupMembership.query.filter_by(group_id=pool_id, user_id=current_user.user_id).first()
-    if existing:
-        return redirect(url_for('pool_space', pool_id=pool_id))
-
-    if pool.is_private:
-        if not form.validate_on_submit() or form.code.data != pool.invite_code:
-            flash('Invalid invite code.', 'error')
-            return redirect(url_for('join_pool'))
-
-    membership = GroupMembership(group_id=pool_id, user_id=current_user.user_id)
-    db.session.add(membership)
-    db.session.commit()
-    flash(f'Joined "{pool.group_name}"!', 'success')
+    if not existing:
+        membership = GroupMembership(group_id=pool_id, user_id=current_user.user_id)
+        db.session.add(membership)
+        db.session.commit()
+        flash(f'Joined "{pool.group_name}"!', 'success')
     return redirect(url_for('pool_space', pool_id=pool_id))
 
 
