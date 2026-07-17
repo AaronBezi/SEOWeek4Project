@@ -4,7 +4,8 @@ from unittest.mock import patch, MagicMock
 from api.openAI_api import generate_summary,download_file,extract_text
 from database.models import Notes,User, DocumentAnalysis, create_Doc_Analysis
 from types import SimpleNamespace
-from api.recommendations.books_api import analyze_document, DocumentAnalysisResponse, save_document_analysis, analyze_and_save_analysis
+from api.recommendations.books_api import analyze_document, DocumentAnalysisResponse, save_document_analysis, analyze_and_save_analysis, get_group_doc_analyses, get_user_doc_analyses
+
 
 #Test for recommendation workflow: Unit test + Integration Test
 #Note to self: When using mocks mock the function where it is called not defined.
@@ -134,7 +135,7 @@ class TestRecommendations:
 
     #Integration test with analyze document then saving it to the database
     def test_analyze_and_save_analysis(self):
-        #reccomendation engine 
+        #reccomendation engine
         note = MagicMock()
         analysis = { "success": True,
         "result": {
@@ -158,6 +159,48 @@ class TestRecommendations:
             assert actual_result == {"success": True, "analysis_id": 21}
             mock_analyze.assert_called_once_with(note)
             mock_save.assert_called_once_with(note,analysis)
+    
+
+    def test_get_user_doc_analyses(self):
+        user_id = 1
+        expected_analyses = [MagicMock(), MagicMock()]
+
+        with patch("api.recommendations.books_api.db") as mock_db:
+            mock_query = mock_db.session.query.return_value
+            mock_join = mock_query.join.return_value
+            mock_filter = mock_join.filter.return_value
+            mock_order = mock_filter.order_by.return_value
+            mock_limit = mock_order.limit.return_value
+
+            mock_limit.all.return_value = expected_analyses
+
+            result = get_user_doc_analyses(user_id)
+
+            assert result == {"success": True, "analyses": expected_analyses}
+            mock_db.session.query.assert_called_once_with(DocumentAnalysis)
+            mock_limit.all.assert_called_once()
+
+    def test_get_group_doc_analyses(self):
+        group_id = 1
+        expected_analyses = [MagicMock(), MagicMock(), MagicMock()]
+
+        with patch("api.recommendations.books_api.db") as mock_db:
+            mock_query = mock_db.session.query.return_value
+            mock_join = mock_query.join.return_value
+            mock_filter = mock_join.filter.return_value
+            mock_order = mock_filter.order_by.return_value
+            mock_limit = mock_order.limit.return_value
+
+            mock_limit.all.return_value = expected_analyses
+
+            result = get_group_doc_analyses(group_id)
+
+            assert result == {"success": True, "analyses": expected_analyses}
+            mock_db.session.query.assert_called_once_with(DocumentAnalysis)
+            mock_limit.all.assert_called_once()
+
+
+
 
         
         

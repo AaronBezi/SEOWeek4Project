@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from typing import Literal
 from pydantic import BaseModel, Field  #This allows us to get correctly formatted json responses back
-from database.models import DocumentAnalysis,create_Doc_Analysis
+from database.models import DocumentAnalysis,create_Doc_Analysis, Notes
 from database.database import db
 
 
@@ -66,6 +66,7 @@ def analyze_document(note):
     
 
 
+#------------------------------------PHASE 2: SAVE DOCUMENT ANALYSIS TO DATABASE-----------------------------------------
 #Saves document analysis for users/groups notes to database
 def save_document_analysis(note,analysis):
     if not note:
@@ -110,7 +111,7 @@ def save_document_analysis(note,analysis):
         db.session.rollback()
         return {"success": False, "error": str(e)}
 
-
+#-----------------------------PHASE 3: COMBINE ANALYZE AND SAVE DOCUEMNTS-------------------------
 def analyze_and_save_analysis(note):
     #Generate an analysis for a given note then save the analysis to the database
     analysis = analyze_document(note)
@@ -119,6 +120,46 @@ def analyze_and_save_analysis(note):
         return analysis
     
     return save_document_analysis(note,analysis)
+
+
+#------------------------PHASE 4: Combine the document analysis for a user or gorup study pool to use as a study profile-----
+def get_user_doc_analyses(user_id):
+    if not user_id: return {"success": False, "error": "User ID is missing"}
+
+    try:
+        #generate users 10 most recent uploads to use for reccomendation
+        user_analyses = db.session.query(DocumentAnalysis
+                                         ).join(Notes,DocumentAnalysis.note_id == Notes.notes_id
+                                                ).filter(Notes.user_id == user_id,Notes.group_id.is_(None)
+                                                         ).order_by(Notes.time_uploaded.desc()).limit(10).all()
+        #if empty retr=urn error
+        if not user_analyses:
+            return {"success": False, "error": "No analyzed notes found for the user"}
+        
+        return {"success": True, "analyses": user_analyses}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    
+
+def get_group_doc_analyses(group_id):
+    if not group_id:
+        return {"success": False, "error": "Group ID does not exist"}
+
+    try:
+        #generate users 10 most recent uploads to use for reccomendation
+        group_analyses = db.session.query(DocumentAnalysis
+                                         ).join(Notes,DocumentAnalysis.note_id == Notes.notes_id
+                                                ).filter(Notes.group_id== group_id
+                                                         ).order_by(Notes.time_uploaded.desc()).limit(10).all()
+        #if empty retr=urn error
+        if not group_analyses:
+            return {"success": False, "error": "No analyzed notes found for this group"}
+        
+        return {"success": True, "analyses": group_analyses}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
 
             
 
