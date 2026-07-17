@@ -5,7 +5,7 @@ from api.openAI_api import generate_summary,download_file,extract_text
 from database.models import Notes,User, DocumentAnalysis, create_Doc_Analysis
 from types import SimpleNamespace
 from api.recommendations.books_api import analyze_document, DocumentAnalysisResponse, save_document_analysis, analyze_and_save_analysis, get_group_doc_analyses, get_user_doc_analyses, build_study_profile
-from api.recommendations.rec_queries import gen_books
+from api.recommendations.rec_queries import gen_books, search_books, retrieve_books
 
 #Test for recommendation workflow: Unit test + Integration Test
 #Note to self: When using mocks mock the function where it is called not defined.
@@ -259,4 +259,8 @@ class TestBooksGeneration():
             print(expected_result)
             assert actual_result == expected_result
             mock_client.chat.completions.parse.assert_called_once()
+
+   
+
+
 
