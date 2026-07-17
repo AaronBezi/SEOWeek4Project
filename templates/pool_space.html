@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Pusher Client library required for chat feature -->
+    <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
 </head>
 <body>
 
@@ -82,6 +84,9 @@
 
         <a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
     </div>
+
+    <!-- integrates the chat panel into the pool space  -->
+    {% include 'chat_panel.html' %}
 
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
