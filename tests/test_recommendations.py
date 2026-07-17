@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from api.openAI_api import generate_summary,download_file,extract_text
 from database.models import Notes,User, DocumentAnalysis, create_Doc_Analysis
 from types import SimpleNamespace
-from api.recommendations.books_api import analyze_document, DocumentAnalysisResponse, save_document_analysis, analyze_and_save_analysis, get_group_doc_analyses, get_user_doc_analyses
+from api.recommendations.books_api import analyze_document, DocumentAnalysisResponse, save_document_analysis, analyze_and_save_analysis, get_group_doc_analyses, get_user_doc_analyses, build_study_profile
 
 
 #Test for recommendation workflow: Unit test + Integration Test
@@ -198,8 +198,39 @@ class TestRecommendations:
             assert result == {"success": True, "analyses": expected_analyses}
             mock_db.session.query.assert_called_once_with(DocumentAnalysis)
             mock_limit.all.assert_called_once()
+    
+    def test_build_study_profile(self):
+        analysis1 = MagicMock()
+        analysis1.subject = "Calculus"
+        analysis1.topics = ["Limits","Derivatives"]
+        analysis1.keywords = ["limit","chain rule"]
+        analysis1.academic_level = "undergraduate"
 
+        analysis2 = MagicMock()
+        analysis2.subject = "Calculus"
+        analysis2.topics = ["Integrals","Derivatives"]
+        analysis2.keywords = ["integration","chain rule"]
+        analysis2.academic_level = "undergraduate"
 
+        analysis3 = MagicMock()
+        analysis3.subject = "Linear Algebra"
+        analysis3.topics = ["Matrices"]
+        analysis3.keywords = ["Matrix"]
+        analysis3.academic_level = "undergraduate"
+
+        analyses_result = {"success": True, "analyses": [analysis1,analysis2,analysis3]}
+        actual_result = build_study_profile(analyses_result)
+        expected_result = {"success": True, "profile":{
+            "subjects": ["calculus", "linear algebra"],
+            "topics": ["derivatives", "limits", "integrals", "matrices"],
+            "keywords":["chain rule","limit", "integration", "matrix"],
+            "academic_level": "undergraduate",
+            "document_count": 3
+        }}
+
+        assert actual_result == expected_result
+
+        
 
 
         

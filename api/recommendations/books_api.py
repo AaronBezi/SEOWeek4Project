@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field  #This allows us to get correctly formatted json responses back
 from database.models import DocumentAnalysis,create_Doc_Analysis, Notes
 from database.database import db
+from collections import Counter
 
 
 
@@ -158,6 +159,43 @@ def get_group_doc_analyses(group_id):
         return {"success": True, "analyses": group_analyses}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+#Combine the queries for the users documents to build a profile for the reccomendation
+def build_study_profile(analyses_result):
+    if not analyses_result:
+        return {"success": False, "error": "Could not retrieve document analyses"}
+    
+    if not analyses_result.get("success"):
+        return {"success": False, "error": analyses_result.get("error","Could not retrieve document analyses")}
+    
+    analyses = analyses_result.get("analyses")
+
+    if not analyses:
+        return {"success": False, "error": "No document analyses were provided"}
+    
+    #idea: we do a similarity between the data for each note counting them to build the weights
+    subject_count = Counter()
+    topic_count = Counter()
+    keyword_count = Counter()
+    academic_level_count = Counter()
+
+    for analysis in analyses:
+        subject_count[analysis.subject.strip().lower()]+=1
+        topic_count.update(topic.strip().lower() for topic in analysis.topics)
+        keyword_count.update(keyword.strip().lower() for keyword in analysis.keywords)
+        academic_level_count[analysis.academic_level.strip().lower()]+=1
+    
+    profile = {
+        #We get the top k most common ocunts for each attribute
+        "subjects": [subject for subject,_ in subject_count.most_common(5)],
+        "topics": [topic for topic,_ in topic_count.most_common(7)],
+        "keywords": [keyword for keyword,_ in keyword_count.most_common(15)],
+        "academic_level": (academic_level_count.most_common(1)[0][0]),
+        "document_count": len(analyses)
+    }
+
+    return {"success": True, "profile": profile}
 
 
 
