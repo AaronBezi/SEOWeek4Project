@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const notesContent = document.getElementById('notes-content');
     const summaryContent = document.getElementById('summary-content');
 
-    #WIRE FRAMED FUNCTIONS IN RECOMMENDATIONS.HTML DELETE THIS COMMENT ONCE DONE
+    //WIRE FRAMED FUNCTIONS IN RECOMMENDATIONS.HTML DELETE THIS COMMENT ONCE DONE
     const bookFeed = document.getElementById('book-feed');
 
     if (uploadBtn) {
@@ -82,5 +82,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     summarizeBtn.querySelector('.btn-text').textContent = 'Summarize Notes';
                 });
         });
+    }
+});
+
+// Global drop down visibility controller function pinned directly to the root window object context
+window.toggleDropdown = function() {
+    const dropdown = document.getElementById("myDropdown");
+    if (dropdown) {
+        if (dropdown.style.display === "none" || dropdown.style.display === "") {
+            dropdown.style.display = "block";
+        } else {
+            dropdown.style.display = "none";
+        }
+    }
+};
+
+// Global tap intercept listener setup to collapse the dropdown box if users click away
+window.addEventListener('click', function(event) {
+    if (!event.target.matches('.menu-trigger') && !event.target.matches('.three-dots')) {
+        const dropdown = document.getElementById("myDropdown");
+        if (dropdown) {
+            dropdown.style.display = "none";
+        }
     }
 });

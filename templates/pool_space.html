@@ -17,17 +17,43 @@
 </head>
 <body>
 
-    <div id="pool-space-view" class="view active">
-        <header>
-            <div class="logo" onclick="window.location.href='{{ url_for('home') }}'">STUDY POOL</div>
-            <div class="pool-title">{{ pool.group_name }}</div>
-            {# Pool owners can see the invite code! #}
-            {% if pool.created_by == current_user.user_id and pool.is_private %}
-            <div class="note-card">
-                Invite code: <strong>{{ pool.invite_code }}</strong>
+<!-- Taskbar  -->
+<header style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; box-sizing: border-box; width: 100%;">
+
+    <!-- Logo on the left -->
+    <div class="logo" onclick="window.location.href='{{ url_for('home') }}'" style="cursor: pointer; font-family: 'Geist Pixel', sans-serif; white-space: nowrap; flex-shrink: 0;">STUDY POOL</div>
+
+    <!-- Title, Invite Code, and Dropdown Menu Button to the right -->
+    <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
+
+        <div class="pool-title" style="font-weight: bold; font-size: 1.1rem; white-space: nowrap;">{{ pool.group_name }}</div>
+
+        {# Original logic check for unique owner access parameters intact #}
+        {% if pool.created_by == current_user.user_id and pool.is_private %}
+        <div style="padding: 3px 8px; font-size: 0.85rem; background-color: rgba(243, 244, 246, 0.15); border-radius: 4px; border: 1px solid rgba(229, 231, 235, 0.2); white-space: nowrap;">
+            Invite code: <strong style="font-family: monospace;">{{ pool.invite_code }}</strong>
+        </div>
+        {% endif %}
+
+        <!-- Dropdown Menu Trigger Container -->
+        <div class="menu-dropdown" style="position: relative; z-index: 1000; margin-left: 5px;">
+            <button class="menu-trigger" onclick="event.stopPropagation(); toggleDropdown();" aria-label="Open Menu" style="background: none; border: none; cursor: pointer; padding: 8px;">
+                <span class="three-dots"></span>
+            </button>
+            <div id="myDropdown" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background-color: #ffffff; min-width: 180px; box-shadow: 0px 8px 16px rgba(0,0,0,0.1); border-radius: 6px; border: 1px solid #e2e8f0; overflow: hidden;">
+                <a href="{{ url_for('home') }}" style="display: block; padding: 10px 16px; text-decoration: none; color: #333;">Home</a>
+                <a href="{{ url_for('my_notes') }}" style="display: block; padding: 10px 16px; text-decoration: none; color: #333;">My Notes</a>
+                <a href="{{ url_for('create_pool') }}" style="display: block; padding: 10px 16px; text-decoration: none; color: #333;">Create Pool</a>
+                <a href="{{ url_for('join_pool') }}" style="display: block; padding: 10px 16px; text-decoration: none; color: #333;">Join a Different Pool</a>
+                <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 4px 0;">
+                {% for p in my_pools %}
+                    <a href="{{ url_for('pool_space', pool_id=p.group_id) }}" style="display: block; padding: 10px 16px; text-decoration: none; color: #333; {% if p.group_id == pool.group_id %}font-weight: bold; background-color: #f8fafc;{% endif %}">{{ p.group_name }}</a>
+                {% endfor %}
             </div>
-            {% endif %}
-        </header>
+        </div>
+
+    </div>
+</header>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -85,11 +111,17 @@
         </div>
 
         <a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
-    </div>
+
+    <script>
+        const POOL_ID = "{{ pool.group_id }}";
+        const CURRENT_USERNAME = "{{ current_user.username }}";
+    </script>
+
+    <!-- Global functions loaded first so drop-down elements run active -->
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 
     <!-- integrates the chat panel into the pool space  -->
     {% include 'chat_panel.html' %}
 
-    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 </body>
 </html>

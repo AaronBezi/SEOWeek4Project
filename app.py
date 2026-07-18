@@ -193,9 +193,20 @@ def pool_space(pool_id):
 
     chat_messages = Message.get_pool_messages(pool_id)
 
-    return render_template('pool_space.html', title=pool.group_name, pool=pool, members=members, notes=notes,
-                           note_urls=note_urls, chat_messages=chat_messages)
+    my_pools = StudyGroup.query.join(GroupMembership, StudyGroup.group_id == GroupMembership.group_id) \
+        .filter(GroupMembership.user_id == current_user.user_id).all()
 
+    return render_template(
+        'pool_space.html',
+        title=pool.group_name,
+        pool=pool,
+        members=members,
+        notes=notes,
+        note_urls=note_urls,
+        chat_messages=chat_messages,
+        pusher_key=os.getenv('PUSHER_KEY'),
+        pusher_cluster=os.getenv('PUSHER_CLUSTER')
+    )
 
 @app.route("/join_pool")
 @login_required

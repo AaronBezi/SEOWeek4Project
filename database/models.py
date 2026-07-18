@@ -117,7 +117,7 @@ class GroupMembership(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
     time_joined = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
-#Message Schema
+# Message Schema
 class Message(db.Model):
     __tablename__ = "messages"
     message_id = db.Column(db.Integer, primary_key=True)
@@ -126,14 +126,19 @@ class Message(db.Model):
     text = db.Column(db.String(1000), nullable=False)
     time_sent = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
-    #Create message and store in the database
-    def create_message(group_id, user_id, text):
-        msg = Message(group_id=group_id, user_id=user_id, text=text)
+    # Automatically joins the user row to easily pull user attributes (like .user.username)
+    user = db.relationship("User", backref=db.backref("messages", lazy=True))
+
+    # Create message and store in the database
+    @classmethod
+    def create_message(cls, group_id, user_id, text):
+        msg = cls(group_id=group_id, user_id=user_id, text=text)
         db.session.add(msg)
         db.session.commit()
         return msg
 
-    #returns most recent messages for a pool, oldest first to display
-    def get_pool_messages(group_id, limit=50):
-        rows = Message.query.filter_by(group_id=group_id).order_by(Message.time_sent.desc()).limit(limit).all()
+    # Returns most recent messages for a pool, oldest first to display
+    @classmethod
+    def get_pool_messages(cls, group_id, limit=50):
+        rows = cls.query.filter_by(group_id=group_id).order_by(cls.time_sent.desc()).limit(limit).all()
         return list(reversed(rows))
