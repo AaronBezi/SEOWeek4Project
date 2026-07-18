@@ -14,12 +14,7 @@ import git
 import os
 import subprocess
 from dotenv import load_dotenv
-<<<<<<< HEAD
-from api.recommendations.books_api import gen_missing_analyses, get_user_doc_analyses, get_group_doc_analyses
-from api.recommendations.rec_queries import generate_recommendations
-=======
 
->>>>>>> c6e37719fb6be1ab9f32d680e8e5ae940a9f35b5
 load_dotenv()
 
 app = Flask(__name__)  # this gets the name of the file so Flask knows it's name
@@ -293,9 +288,10 @@ def summarize():
     return {"success": True, "summary": summaries}, 200
     # notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
 
+    # if not result.get('success'):
+    #     return {'error': result.get('error', 'Could not generate summary')}, 500
 
-
-
+    # return {'success': True, 'summary': result['summary']}, 200
 
 
 @app.route("/api/recommendations", methods=['POST'])
@@ -336,39 +332,7 @@ def webhook():
         return 'Wrong event type', 400
 
 
-<<<<<<< HEAD
-@app.route("/pool_space/<int:pool_id>/kick/<int:user_id>", methods=['POST'])
-@login_required
-def kick_member(pool_id, user_id):
-    pool = StudyGroup.query.get_or_404(pool_id)
-    user = User.query.get_or_404(user_id)
-    
-    if current_user.user_id == pool.created_by and user_id != current_user.user_id:
-        membership = GroupMembership.query.filter_by(group_id=pool_id, user_id=user_id).first()
-        if membership:
-            db.session.delete(membership)
-            db.session.commit()
-            flash(f'"{user.username}" was removed from your group', 'success')
-    else:
-        flash('Failed to remove user', 'error')
-
-    return redirect(url_for('pool_space', pool_id=pool_id))
-
-
-        
-
-
-if __name__ == '__main__':               # this should always be at the end
-    app.run(debug=True, host="0.0.0.0", port=8080)
-
-
-
-
-
-
-
-
-=======
 if __name__ == '__main__':  # this should always be at the end
     app.run(debug=True, host="0.0.0.0", port=8080)
->>>>>>> c6e37719fb6be1ab9f32d680e8e5ae940a9f35b5
+
+

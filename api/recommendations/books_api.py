@@ -231,7 +231,7 @@ def create_group_study_profile(group_id):
     analyses_result = get_group_doc_analyses(group_id)
     if not analyses_result.get("success"):
         return analyses_result
-    return build_study_profile(analyses_result=)
+    return build_study_profile(analyses_result)
 
 
 
