@@ -188,15 +188,25 @@ def pool_space(pool_id):
         GroupMembership.group_id == pool_id).all()
     notes = Notes.query.filter_by(group_id=pool_id).all()  # a list of note objects
     note_urls = {}  # key = note id, val = file path for that note id
-
     for note in notes:
         note_urls[note.notes_id] = get_note_file(note.file_path)
 
     chat_messages = Message.get_pool_messages(pool_id)
 
-    return render_template('pool_space.html', title=pool.group_name, pool=pool, members=members, notes=notes,
-                           note_urls=note_urls, chat_messages=chat_messages, pusher_key=os.getenv('PUSHER_KEY'), pusher_cluster=os.getenv('PUSHER_CLUSTER'))
+    my_pools = StudyGroup.query.join(GroupMembership, StudyGroup.group_id == GroupMembership.group_id) \
+        .filter(GroupMembership.user_id == current_user.user_id).all()
 
+    return render_template(
+        'pool_space.html',
+        title=pool.group_name,
+        pool=pool,
+        members=members,
+        notes=notes,
+        note_urls=note_urls,
+        chat_messages=chat_messages,
+        pusher_key=os.getenv('PUSHER_KEY'),
+        pusher_cluster=os.getenv('PUSHER_CLUSTER')
+    )
 
 @app.route("/join_pool")
 @login_required
@@ -275,6 +285,12 @@ def summarize():
         summaries.append({"note_name": note.note_name, "summary": result['summary']})
 
     return {"success": True, "summary": summaries}, 200
+    # notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
+
+    # if not result.get('success'):
+    #     return {'error': result.get('error', 'Could not generate summary')}, 500
+
+    # return {'success': True, 'summary': result['summary']}, 200
 
 
 @app.route("/update_server", methods=['POST'])
@@ -293,24 +309,6 @@ def webhook():
         return 'Updated PythonAnywhere successfully', 200
     else:
         return 'Wrong event type', 400
-
-
-@app.route("/pool_space/<int:pool_id>/kick/<int:user_id>", methods=['POST'])
-@login_required
-def kick_member(pool_id, user_id):
-    pool = StudyGroup.query.get_or_404(pool_id)
-    user = User.query.get_or_404(user_id)
-
-    if current_user.user_id == pool.created_by and user_id != current_user.user_id:
-        membership = GroupMembership.query.filter_by(group_id=pool_id, user_id=user_id).first()
-        if membership:
-            db.session.delete(membership)
-            db.session.commit()
-            flash(f'"{user.username}" was removed from your group', 'success')
-    else:
-        flash('Failed to remove user', 'error')
-
-    return redirect(url_for('pool_space', pool_id=pool_id))
 
 
 if __name__ == '__main__':  # this should always be at the end

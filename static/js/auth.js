@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const notesContent = document.getElementById('notes-content');
     const summaryContent = document.getElementById('summary-content');
 
-    // WIRE FRAMED FUNCTIONS IN RECOMMENDATIONS.HTML DELETE THIS COMMENT ONCE DONE
+    //WIRE FRAMED FUNCTIONS IN RECOMMENDATIONS.HTML DELETE THIS COMMENT ONCE DONE
     const bookFeed = document.getElementById('book-feed');
 
     if (uploadBtn) {
@@ -85,51 +85,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-function toggleDropdown() {
-    document.getElementById('myDropdown').classList.toggle('show');
-}
-
-window.onclick = function (event) {
-    if (!event.target.matches('.menu-trigger') && !event.target.matches('.three-dots')) {
-        document.querySelectorAll('.dropdown-content').forEach(dropdown => {
-            dropdown.classList.remove('show');
-        });
+// Global drop down visibility controller function pinned directly to the root window object context
+window.toggleDropdown = function() {
+    const dropdown = document.getElementById("myDropdown");
+    if (dropdown) {
+        if (dropdown.style.display === "none" || dropdown.style.display === "") {
+            dropdown.style.display = "block";
+        } else {
+            dropdown.style.display = "none";
+        }
     }
 };
 
-let allRecommendations = [];
-
-function renderBooks(books) {
-    const bookFeed = document.getElementById('book-feed');
-    if (!bookFeed) return;
-    if (!books || books.length === 0) {
-        bookFeed.innerHTML = '<p class="placeholder-text">No recommendations found.</p>';
-        return;
+// Global tap intercept listener setup to collapse the dropdown box if users click away
+window.addEventListener('click', function(event) {
+    if (!event.target.matches('.menu-trigger') && !event.target.matches('.three-dots')) {
+        const dropdown = document.getElementById("myDropdown");
+        if (dropdown) {
+            dropdown.style.display = "none";
+        }
     }
-    bookFeed.innerHTML = books.map(book => `
-        <div class="book-card">
-            <strong>${book.subject}</strong>
-            <p>${book.summary}</p>
-            <div class="book-tags">
-                ${book.topics.map(t => `<span class="tag">${t}</span>`).join('')}
-            </div>
-        </div>
-    `).join('');
-}
-
-function runLiveSearch() {
-    const query = document.getElementById('search-input').value.toLowerCase();
-    const filtered = allRecommendations.filter(book =>
-        book.subject.toLowerCase().includes(query) ||
-        book.summary.toLowerCase().includes(query) ||
-        book.topics.some(t => t.toLowerCase().includes(query)) ||
-        book.keywords.some(k => k.toLowerCase().includes(query))
-    );
-    renderBooks(filtered);
-}
-
-function toggleLayoutMode() {
-    const bookFeed = document.getElementById('book-feed');
-    bookFeed.classList.toggle('book-list');
-    bookFeed.classList.toggle('book-grid');
-}
+});

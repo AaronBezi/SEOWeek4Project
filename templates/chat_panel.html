@@ -6,20 +6,22 @@
             <button class="chat-toggle-btn" id="collapse-toggle-btn" title="Minimize">−</button>
         </div>
     </div>
-    <div class="chat-body">
+    <div class="chat-body" id="chat-panel-body">
         <div class="chat-history" id="chat-stream-box">
             {% if chat_messages %}
                 {% for msg in chat_messages %}
                     <div class="chat-container {% if msg.user_id == current_user.user_id %}outgoing{% else %}incoming{% endif %}">
-                        <span class="chat-sender">{{ msg.username }}</span>
-                        <p>{{ msg.message_text }}</p>
-                        <span class="chat-time">{{ msg.timestamp.strftime('%I:%M %p') }}</span>
+                         <span class="chat-sender">{{ msg.user.username }}</span>
+                         <p>{{ msg.text }}</p>
+                         <span class="chat-time">{{ msg.time_sent.strftime('%I:%M %p') }}</span>
                     </div>
                 {% endfor %}
             {% endif %}
         </div>
-        <form class="chat-input-form" id="chat-input-form" method="POST" action="{{ url_for('send_chat_message', pool_id=pool.pool_id) if pool else '#' }}">
-            <input type="text" id="message-input-field" name="message" class="text-input" placeholder="Type a message..." required autocomplete="off">
+
+        <form class="chat-input-form" id="chat-input-form" method="POST"
+            action="{{ url_for('send_message', pool_id=pool.group_id) if pool else '#' }}">
+            <input type="text" id="message-input-field" name="text" class="text-input" placeholder="Type a message..." required autocomplete="off">
             <button type="submit" class="chat-send-btn">Send</button>
         </form>
     </div>
@@ -32,14 +34,23 @@
         const chatStreamBox = document.getElementById('chat-stream-box');
         const expandBtn = document.getElementById('expand-toggle-btn');
         const collapseBtn = document.getElementById('collapse-toggle-btn');
+        const chatForm = document.getElementById('chat-input-form');
 
-        // --- 1. UI Window Layout Controls ---
-        if (chatStreamBox) {
-            chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
-        }
+        // Initial Scroll
+        if (chatStreamBox) chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
 
+        // --- Layout Toggles ---
         chatHeader.addEventListener('click', (e) => {
+
             if (e.target === expandBtn || e.target === collapseBtn) return;
+
+            chatPanel.classList.remove('is-expanded');
+            chatPanel.classList.toggle('is-collapsed');
+            collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
+        });
+
+        collapseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             chatPanel.classList.remove('is-expanded');
             chatPanel.classList.toggle('is-collapsed');
             collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
@@ -51,16 +62,24 @@
             collapseBtn.textContent = '−';
             chatPanel.classList.toggle('is-expanded');
             expandBtn.textContent = chatPanel.classList.contains('is-expanded') ? '⤡' : '⤢';
-            setTimeout(() => { chatStreamBox.scrollTop = chatStreamBox.scrollHeight; }, 150);
+            setTimeout(() => { if (chatStreamBox) chatStreamBox.scrollTop = chatStreamBox.scrollHeight; }, 150);
         });
 
-        // --- 2. Live WebSockets Real-time Integration (Pusher) ---
-        const pusher = new Pusher("{{ pusher_key }}", {
-            cluster: "{{ pusher_cluster }}"
-        });
+        // --- AJAX Send Handling ---
+        if (chatForm) {
+            chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = document.getElementById('message-input-field');
+                const formData = new FormData(chatForm);
 
+                await fetch(chatForm.action, { method: 'POST', body: formData });
+                input.value = '';
+            });
+        }
+
+        // --- Pusher Live Updates ---
+        const pusher = new Pusher("{{ pusher_key }}", { cluster: "{{ pusher_cluster }}" });
         const channel = pusher.subscribe('pool-' + POOL_ID);
-
         channel.bind('new-message', function(data) {
             const div = document.createElement('div');
             div.className = `chat-container ${data.username === CURRENT_USERNAME ? 'outgoing' : 'incoming'}`;
@@ -68,16 +87,5 @@
             chatStreamBox.appendChild(div);
             chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
         });
-
-        // --- 3. Dynamic AJAX Message Interception ---
-        document.getElementById('chat-input-form').onsubmit = async (e) => {
-            e.preventDefault();
-            const input = document.getElementById('message-input-field');
-            const formData = new FormData();
-            formData.append('text', input.value);
-
-            await fetch(`/pool_space/${POOL_ID}/message`, { method: 'POST', body: formData });
-            input.value = '';
-        };
     });
 </script>
