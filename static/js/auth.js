@@ -5,8 +5,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const notesContent = document.getElementById('notes-content');
     const summaryContent = document.getElementById('summary-content');
 
-    // WIRE FRAMED FUNCTIONS IN RECOMMENDATIONS.HTML DELETE THIS COMMENT ONCE DONE
     const bookFeed = document.getElementById('book-feed');
+
+    if (bookFeed) {
+        fetch('/api/recommendations', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    allRecommendations = data.recommendations;
+                    renderBooks(allRecommendations);
+                } else {
+                    bookFeed.innerHTML = `<p class="placeholder-text" style="color: #dc2626;">Error: ${data.error || 'Could not load recommendations.'}</p>`;
+                }
+            })
+            .catch(() => {
+                bookFeed.innerHTML = '<p class="placeholder-text">Could not load recommendations. Please try again.</p>';
+            });
+    }
 
     if (uploadBtn) {
         uploadBtn.addEventListener('click', function () {
@@ -85,17 +100,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-function toggleDropdown() {
-    document.getElementById('myDropdown').classList.toggle('show');
-}
-
-window.onclick = function (event) {
-    if (!event.target.matches('.menu-trigger') && !event.target.matches('.three-dots')) {
-        document.querySelectorAll('.dropdown-content').forEach(dropdown => {
-            dropdown.classList.remove('show');
-        });
+// Global drop down visibility controller function pinned directly to the root window object context
+window.toggleDropdown = function() {
+    const dropdown = document.getElementById("myDropdown");
+    if (dropdown) {
+        if (dropdown.style.display === "none" || dropdown.style.display === "") {
+            dropdown.style.display = "block";
+        } else {
+            dropdown.style.display = "none";
+        }
     }
 };
+
+// Global tap intercept listener setup to collapse the dropdown box if users click away
+window.addEventListener('click', function(event) {
+    if (!event.target.matches('.menu-trigger') && !event.target.matches('.three-dots')) {
+        const dropdown = document.getElementById("myDropdown");
+        if (dropdown) {
+            dropdown.style.display = "none";
+        }
+    }
+});
 
 let allRecommendations = [];
 
@@ -108,11 +133,10 @@ function renderBooks(books) {
     }
     bookFeed.innerHTML = books.map(book => `
         <div class="book-card">
-            <strong>${book.subject}</strong>
-            <p>${book.summary}</p>
-            <div class="book-tags">
-                ${book.topics.map(t => `<span class="tag">${t}</span>`).join('')}
-            </div>
+            <strong>${book.title}</strong>
+            <p class="book-authors">${book.authors.join(', ')}</p>
+            <p>${book.description || 'No description available.'}</p>
+            ${book.preview_link ? `<a href="${book.preview_link}" target="_blank" class="preview-link">Preview</a>` : ''}
         </div>
     `).join('');
 }
@@ -120,10 +144,9 @@ function renderBooks(books) {
 function runLiveSearch() {
     const query = document.getElementById('search-input').value.toLowerCase();
     const filtered = allRecommendations.filter(book =>
-        book.subject.toLowerCase().includes(query) ||
-        book.summary.toLowerCase().includes(query) ||
-        book.topics.some(t => t.toLowerCase().includes(query)) ||
-        book.keywords.some(k => k.toLowerCase().includes(query))
+        book.title.toLowerCase().includes(query) ||
+        (book.description && book.description.toLowerCase().includes(query)) ||
+        book.authors.some(a => a.toLowerCase().includes(query))
     );
     renderBooks(filtered);
 }

@@ -1,6 +1,6 @@
 from .database import db
 from datetime import datetime
-from sqlalchemy import func, JSON
+from sqlalchemy import func
 from flask_login import LoginManager, current_user, UserMixin, login_user
 #File used to create Schemas for the database
 
@@ -117,31 +117,46 @@ class GroupMembership(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
     time_joined = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
-
-#Database schema to store document analysis for recommendation engine
-#generate document analysis for each note then query them combining into a study profile for recommendations
 class DocumentAnalysis(db.Model):
     __tablename__ = "document_analysis"
     analysis_id = db.Column(db.Integer, primary_key=True)
-    note_id = db.Column(db.Integer,db.ForeignKey("notes.notes_id"),nullable=False,unique=True)
-    subject = db.Column(db.JSON,nullable=False)
+    note_id = db.Column(db.Integer, db.ForeignKey("notes.notes_id"), nullable=False, unique=True)
+    subject = db.Column(db.JSON, nullable=False)
     topics = db.Column(db.JSON, nullable=False)
     keywords = db.Column(db.JSON, nullable=False)
-    academic_level = db.Column(db.String(150),nullable=False)
-    summary = db.Column(db.Text,nullable=False)
+    academic_level = db.Column(db.String(150), nullable=False)
+    summary = db.Column(db.Text, nullable=False)
 
-#metadata containing the sibject,topics,keywords,academic_level,summary
-def create_Doc_Analysis(note_id,metadata):
-    return DocumentAnalysis(note_id = note_id,subject=metadata['subject'],
-                            topics = metadata['topics'],
-                            keywords = metadata['keywords'],
-                            academic_level = metadata['academic_level'],
-                            summary = metadata['summary']
-                            )
+def create_Doc_Analysis(note_id, metadata):
+    return DocumentAnalysis(note_id=note_id, subject=metadata['subject'],
+                            topics=metadata['topics'], keywords=metadata['keywords'],
+                            academic_level=metadata['academic_level'], summary=metadata['summary'])
 
 
     
 #CREATE RECOMMENDATIONS SCHEMA TO SAVE BOOKS RECOMMENDED LATER
+# Message Schema
+class Message(db.Model):
+    __tablename__ = "messages"
+    message_id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("study_groups.group_id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
+    text = db.Column(db.String(1000), nullable=False)
+    time_sent = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
-    
+    # Automatically joins the user row to easily pull user attributes (like .user.username)
+    user = db.relationship("User", backref=db.backref("messages", lazy=True))
 
+    # Create message and store in the database
+    @classmethod
+    def create_message(cls, group_id, user_id, text):
+        msg = cls(group_id=group_id, user_id=user_id, text=text)
+        db.session.add(msg)
+        db.session.commit()
+        return msg
+
+    # Returns most recent messages for a pool, oldest first to display
+    @classmethod
+    def get_pool_messages(cls, group_id, limit=50):
+        rows = cls.query.filter_by(group_id=group_id).order_by(cls.time_sent.desc()).limit(limit).all()
+        return list(reversed(rows))

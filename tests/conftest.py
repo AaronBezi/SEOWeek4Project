@@ -1,5 +1,9 @@
 import os
 os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+os.environ.setdefault('PUSHER_APP_ID', '123456')
+os.environ.setdefault('PUSHER_KEY', 'test')
+os.environ.setdefault('PUSHER_SECRET', 'test')
+os.environ.setdefault('PUSHER_CLUSTER', 'test')
 
 import pytest
 from sqlalchemy.pool import StaticPool
