@@ -124,6 +124,28 @@ def analyze_and_save_analysis(note):
 
 
 #------------------------PHASE 4: Combine the document analysis for a user or gorup study pool to use as a study profile-----
+#get analyses for notes without a analysis
+def gen_missing_analyses(notes):
+    if not notes:
+        return {"success": False, "error": "No notes provided"}
+    try:
+        for note in notes:
+            #get analysis for each note if nothing returned create one
+            analysis = DocumentAnalysis.query.filter_by(note_id=note.notes_id).first()
+            if not analysis:
+                analysis_result = analyze_document(note)
+                
+                #if note has no analysis create one and save to the database
+                if analysis_result.get("success"):
+                    save_result = save_document_analysis(note,analysis_result)
+                    if not save_result.get("success"):continue
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error":str(e)}
+
+
+
+
 def get_user_doc_analyses(user_id):
     if not user_id: return {"success": False, "error": "User ID is missing"}
 
@@ -209,7 +231,7 @@ def create_group_study_profile(group_id):
     analyses_result = get_group_doc_analyses(group_id)
     if not analyses_result.get("success"):
         return analyses_result
-    return build_study_profile(analyses_result)
+    return build_study_profile(analyses_result=)
 
 
 

@@ -141,7 +141,7 @@ def create_Doc_Analysis(note_id,metadata):
 
 
     
-
+#CREATE RECOMMENDATIONS SCHEMA TO SAVE BOOKS RECOMMENDED LATER
 
     
 

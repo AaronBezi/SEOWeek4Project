@@ -12,6 +12,8 @@ import git
 import os
 import subprocess
 from dotenv import load_dotenv
+from api.recommendations.books_api import gen_missing_analyses, get_user_doc_analyses, get_group_doc_analyses
+from api.recommendations.rec_queries import generate_recommendations
 load_dotenv()
 
 app = Flask(__name__)                    # this gets the name of the file so Flask knows it's name
@@ -229,12 +231,10 @@ def summarize():
         summaries.append({"note_name":note.note_name, "summary": result['summary']})
     
     return {"success": True, "summary": summaries},200
-    # notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
 
-    # if not result.get('success'):
-    #     return {'error': result.get('error', 'Could not generate summary')}, 500
 
-    # return {'success': True, 'summary': result['summary']}, 200
+
+
 
 
 @app.route("/update_server", methods=['POST'])
@@ -270,6 +270,8 @@ def kick_member(pool_id, user_id):
         flash('Failed to remove user', 'error')
 
     return redirect(url_for('pool_space', pool_id=pool_id))
+
+
         
 
 
