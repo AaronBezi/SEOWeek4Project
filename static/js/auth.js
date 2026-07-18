@@ -5,8 +5,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const notesContent = document.getElementById('notes-content');
     const summaryContent = document.getElementById('summary-content');
 
-    //WIRE FRAMED FUNCTIONS IN RECOMMENDATIONS.HTML DELETE THIS COMMENT ONCE DONE
     const bookFeed = document.getElementById('book-feed');
+
+    if (bookFeed) {
+        fetch('/api/recommendations', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    allRecommendations = data.recommendations;
+                    renderBooks(allRecommendations);
+                } else {
+                    bookFeed.innerHTML = `<p class="placeholder-text" style="color: #dc2626;">Error: ${data.error || 'Could not load recommendations.'}</p>`;
+                }
+            })
+            .catch(() => {
+                bookFeed.innerHTML = '<p class="placeholder-text">Could not load recommendations. Please try again.</p>';
+            });
+    }
 
     if (uploadBtn) {
         uploadBtn.addEventListener('click', function () {
@@ -106,3 +121,38 @@ window.addEventListener('click', function(event) {
         }
     }
 });
+
+let allRecommendations = [];
+
+function renderBooks(books) {
+    const bookFeed = document.getElementById('book-feed');
+    if (!bookFeed) return;
+    if (!books || books.length === 0) {
+        bookFeed.innerHTML = '<p class="placeholder-text">No recommendations found.</p>';
+        return;
+    }
+    bookFeed.innerHTML = books.map(book => `
+        <div class="book-card">
+            <strong>${book.title}</strong>
+            <p class="book-authors">${book.authors.join(', ')}</p>
+            <p>${book.description || 'No description available.'}</p>
+            ${book.preview_link ? `<a href="${book.preview_link}" target="_blank" class="preview-link">Preview</a>` : ''}
+        </div>
+    `).join('');
+}
+
+function runLiveSearch() {
+    const query = document.getElementById('search-input').value.toLowerCase();
+    const filtered = allRecommendations.filter(book =>
+        book.title.toLowerCase().includes(query) ||
+        (book.description && book.description.toLowerCase().includes(query)) ||
+        book.authors.some(a => a.toLowerCase().includes(query))
+    );
+    renderBooks(filtered);
+}
+
+function toggleLayoutMode() {
+    const bookFeed = document.getElementById('book-feed');
+    bookFeed.classList.toggle('book-list');
+    bookFeed.classList.toggle('book-grid');
+}

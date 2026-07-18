@@ -117,6 +117,22 @@ class GroupMembership(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
     time_joined = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow)
 
+class DocumentAnalysis(db.Model):
+    __tablename__ = "document_analysis"
+    analysis_id = db.Column(db.Integer, primary_key=True)
+    note_id = db.Column(db.Integer, db.ForeignKey("notes.notes_id"), nullable=False, unique=True)
+    subject = db.Column(db.JSON, nullable=False)
+    topics = db.Column(db.JSON, nullable=False)
+    keywords = db.Column(db.JSON, nullable=False)
+    academic_level = db.Column(db.String(150), nullable=False)
+    summary = db.Column(db.Text, nullable=False)
+
+def create_Doc_Analysis(note_id, metadata):
+    return DocumentAnalysis(note_id=note_id, subject=metadata['subject'],
+                            topics=metadata['topics'], keywords=metadata['keywords'],
+                            academic_level=metadata['academic_level'], summary=metadata['summary'])
+
+
 # Message Schema
 class Message(db.Model):
     __tablename__ = "messages"

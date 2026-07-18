@@ -1,7 +1,7 @@
 import pytest
 from io import BytesIO
 from werkzeug.security import generate_password_hash
-from database.models import User, Notes
+from database.models import User, Notes, StudyGroup, GroupMembership, Message
 from database.database import db as _db
 
 
@@ -152,20 +152,47 @@ class TestPrivatePool:
 
 class TestChat:
     def test_send_message_unauthenticated_returns_401(self, client):
-        # POST to /chat/<pool_id>/send without login and assert 401
-        pass
+        response = client.post('/pool_space/1/message', data={'text': 'hello'})
+        assert response.status_code == 302  # @login_required redirects to login
 
-    def test_send_message_returns_200(self, client):
-        # login, POST a message to a pool chat, assert 200 and message saved
-        pass
+    def test_send_message_returns_200(self, client, db, monkeypatch):
+        monkeypatch.setattr('app.pusher_client.trigger', lambda *args, **kwargs: None)
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        pool = StudyGroup(group_name='Chat Pool', created_by=user.user_id, is_private=False)
+        db.session.add(pool)
+        db.session.commit()
+        db.session.add(GroupMembership(group_id=pool.group_id, user_id=user.user_id))
+        db.session.commit()
+        response = client.post(f'/pool_space/{pool.group_id}/message', data={'text': 'hello'})
+        assert response.status_code == 200
+        assert response.get_json()['success'] is True
 
-    def test_get_messages_returns_list(self, client):
-        # login, send 2 messages, GET /chat/<pool_id>/messages, assert list of 2
-        pass
+    def test_get_messages_returns_list(self, client, db, monkeypatch):
+        monkeypatch.setattr('app.pusher_client.trigger', lambda *args, **kwargs: None)
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        pool = StudyGroup(group_name='Chat Pool', created_by=user.user_id, is_private=False)
+        db.session.add(pool)
+        db.session.commit()
+        db.session.add(GroupMembership(group_id=pool.group_id, user_id=user.user_id))
+        db.session.commit()
+        client.post(f'/pool_space/{pool.group_id}/message', data={'text': 'first'})
+        client.post(f'/pool_space/{pool.group_id}/message', data={'text': 'second'})
+        messages = Message.get_pool_messages(pool.group_id)
+        assert len(messages) == 2
 
-    def test_get_messages_empty_pool_returns_empty(self, client):
-        # GET messages for a pool with no chat history and assert empty list
-        pass
+    def test_get_messages_empty_pool_returns_empty(self, client, db):
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        pool = StudyGroup(group_name='Empty Pool', created_by=user.user_id, is_private=False)
+        db.session.add(pool)
+        db.session.commit()
+        messages = Message.get_pool_messages(pool.group_id)
+        assert messages == []
 
 
 class TestQuiz:

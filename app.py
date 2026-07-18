@@ -7,6 +7,7 @@ from database.models import User, Notes, Notes_Summary, StudyGroup, GroupMembers
 from database.database import db
 from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
 from api.openAI_api import generate_summary
+from api.recommendations.rec_queries import create_user_study_profile, gen_books, retrieve_books
 from pusher import Pusher
 import secrets
 import git
@@ -291,6 +292,26 @@ def summarize():
     #     return {'error': result.get('error', 'Could not generate summary')}, 500
 
     # return {'success': True, 'summary': result['summary']}, 200
+
+
+@app.route("/api/recommendations", methods=['POST'])
+def recommendations():
+    if not current_user.is_authenticated:
+        return {'error': 'User not logged in'}, 401
+
+    profile_result = create_user_study_profile(current_user.user_id)
+    if not profile_result.get('success'):
+        return {'success': False, 'error': profile_result.get('error', 'Could not build study profile')}, 400
+
+    queries_result = gen_books(profile_result)
+    if not queries_result.get('success'):
+        return {'success': False, 'error': queries_result.get('error', 'Could not generate search queries')}, 500
+
+    books_result = retrieve_books(queries_result)
+    if not books_result.get('success'):
+        return {'success': False, 'error': books_result.get('error', 'Could not retrieve books')}, 500
+
+    return {'success': True, 'recommendations': books_result['books']}, 200
 
 
 @app.route("/update_server", methods=['POST'])
