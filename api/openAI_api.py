@@ -11,12 +11,16 @@ client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 md = MarkItDown()
 
 def download_file(note):
+    if not note:
+        return None
     #downloads file from supabase storage
     ext = note.file_path.rsplit(".",1)[-1].lower()
     return supabase.storage.from_("notes").download(note.file_path),ext
 
 
 def extract_text(file,extension):
+    if not file:
+        return None
     #read file returned from supabase and get the text with markdown
     result = md.convert_stream(io.BytesIO(file),file_extension=f".{extension}")
     return result.text_content

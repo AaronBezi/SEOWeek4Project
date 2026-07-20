@@ -7,7 +7,9 @@ from typing import Literal
 from pydantic import BaseModel, Field  #This allows us to get correctly formatted json responses back
 from database.models import DocumentAnalysis,create_Doc_Analysis, Notes
 from database.database import db
+from .embed import get_embedding, build_embedding_text
 from collections import Counter
+from api.hashing import content_hash
 
 
 
@@ -27,14 +29,11 @@ class DocumentAnalysisResponse(BaseModel):
 
 
 #--------------------------------------------PHASE 1: PARSING DOCUMENTS FOR METADATA FOR GOOGLE BOOKS API---------------------------
-#Takes a note from supabase storage extracts its contents and pass into openai api to get metadata for books api
-def analyze_document(note):
-    if not note:
-        return {"success": False, "error": "Note is empty"}
+#Takes a extarcted note text from supabase storage extracts its contents and pass into openai api to get metadata for books api
+#This function is ony called if an analysis for the note doesnt exist already
+def analyze_document(document_text):
     
     try:
-        file_bytes,ext= download_file(note)
-        document_text = extract_text(file_bytes,ext)
         if not document_text or not document_text.strip():  #protects aganist empty documents
             return {"success": False, "error": "No document found to analyze."}
         response = open_client.chat.completions.parse(
@@ -68,41 +67,42 @@ def analyze_document(note):
 
 
 #------------------------------------PHASE 2: SAVE DOCUMENT ANALYSIS TO DATABASE-----------------------------------------
-#Saves document analysis for users/groups notes to database
-def save_document_analysis(note,analysis):
+#If existing analysis already exist just return, if it doesn't exist create object and save to database. Tkaes in a note object from the user
+def get_or_create_analysis(note):
     if not note:
         return {"success": False, "error": "Note is empty"}
-
-    if not isinstance(analysis,dict):
-        return {"success": False, "error": "Invalid analysis result"}
-    #analysis failed or is empty
-    if not analysis or not analysis.get("success"):
-        return {"success": False, "error": analysis.get("error","Document analysis failed")}
     
-    metadata = analysis.get("result")
+    file_bytes,ext = download_file(note)
+    document_text = extract_text(file_bytes,ext)
+    content_h = content_hash(document_text) #creates the hash for the text
 
-    if not metadata:
-        return {"success": False, "error": "metadata is empty"}
-
+    #new chnange: query by hash instead so we dont analyze notes with similar contents
     try:
-        if not note.notes_id:
-            return {"success": False, "result": "Notes ID is not correct"}
-        analysis_exist = DocumentAnalysis.query.filter_by(note_id = note.notes_id).first()
+        analysis_exist = DocumentAnalysis.query.filter_by(content_hash= content_h).first()
 
-        #anlysis for this note exist just add the existing data
+        #anlysis for this note exist just add the existing data(to avoid naming errors)
         if analysis_exist:
-            analysis_exist.subject = metadata['subject']
-            analysis_exist.topics = metadata['topics']
-            analysis_exist.keywords = metadata['keywords']
-            analysis_exist.academic_level = metadata['academic_level']
-            analysis_exist.summary = metadata['summary']
-        else:
-            analysis_exist = create_Doc_Analysis(note.notes_id,metadata)
+            linked = create_Doc_Analysis(note.notes_id,analysis_exist,content_h,analysis_exist.embedding)
+            db.session.add(linked)
+            db.session.commit()
+            return linked
+
+        #if analysis doesnt exist already create one then add to database
+            
+        metadata = analyze_document(document_text)   #returns document response format
+        if not metadata.get("success"):
+            return {"success": False, "error": metadata.get("error")}
+        if not metadata.get("result"):
+            return {"success": False, "error": "analysis is empty"}
         
-            db.session.add(analysis_exist)
+        #build and store the vector embedding for the new docuemnt analysis
+        result = metadata.get("result")
+        embedding = get_embedding(build_embedding_text(result))
+        analysis = create_Doc_Analysis(note.notes_id,metadata.get("result"),content_h,embedding)
+        db.session.add(analysis)
         db.session.commit()
         
-        return {"success": True, "analysis_id": analysis_exist.analysis_id}
+        return {"success": True, "analysis": analysis}  #return type: DocumentAnalysis Object
     
     except KeyError as error:
         db.session.rollback()
@@ -112,36 +112,44 @@ def save_document_analysis(note,analysis):
         db.session.rollback()
         return {"success": False, "error": str(e)}
 
+
+
+
+
+
+
+
+
 #-----------------------------PHASE 3: COMBINE ANALYZE AND SAVE DOCUEMNTS-------------------------
-def analyze_and_save_analysis(note):
-    #Generate an analysis for a given note then save the analysis to the database
-    analysis = analyze_document(note)
-    #if analysi sfailed return the error message
-    if not analysis.get("success"):
-        return analysis
+# def analyze_and_save_analysis(note):
+#     #Generate an analysis for a given note then save the analysis to the database
+#     analysis = analyze_document(note)
+#     #if analysi sfailed return the error message
+#     if not analysis.get("success"):
+#         return analysis
     
-    return save_document_analysis(note,analysis)
+#     return save_document_analysis(note,analysis)
 
 
-#------------------------PHASE 4: Combine the document analysis for a user or gorup study pool to use as a study profile-----
-#get analyses for notes without a analysis
-def gen_missing_analyses(notes):
-    if not notes:
-        return {"success": False, "error": "No notes provided"}
-    try:
-        for note in notes:
-            #get analysis for each note if nothing returned create one
-            analysis = DocumentAnalysis.query.filter_by(note_id=note.notes_id).first()
-            if not analysis:
-                analysis_result = analyze_document(note)
+# #------------------------PHASE 4: Combine the document analysis for a user or gorup study pool to use as a study profile-----
+# #get analyses for notes without a analysis
+# def gen_missing_analyses(notes):
+#     if not notes:
+#         return {"success": False, "error": "No notes provided"}
+#     try:
+#         for note in notes:
+#             #get analysis for each note if nothing returned create one
+#             analysis = DocumentAnalysis.query.filter_by(note_id=note.notes_id).first()
+#             if not analysis:
+#                 analysis_result = analyze_document(note)
                 
-                #if note has no analysis create one and save to the database
-                if analysis_result.get("success"):
-                    save_result = save_document_analysis(note,analysis_result)
-                    if not save_result.get("success"):continue
-        return {"success": True}
-    except Exception as e:
-        return {"success": False, "error":str(e)}
+#                 #if note has no analysis create one and save to the database
+#                 if analysis_result.get("success"):
+#                     save_result = save_document_analysis(note,analysis_result)
+#                     if not save_result.get("success"):continue
+#         return {"success": True}
+#     except Exception as e:
+#       return {"success": False, "error":str(e)}
 
 
 
@@ -169,7 +177,7 @@ def get_group_doc_analyses(group_id):
         return {"success": False, "error": "Group ID does not exist"}
 
     try:
-        #generate users 10 most recent uploads to use for reccomendation
+        #generate users 10 most recent uploads to use for recommendation
         group_analyses = db.session.query(DocumentAnalysis
                                          ).join(Notes,DocumentAnalysis.note_id == Notes.notes_id
                                                 ).filter(Notes.group_id== group_id

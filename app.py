@@ -298,6 +298,13 @@ def summarize():
 def recommendations():
     if not current_user.is_authenticated:
         return {'error': 'User not logged in'}, 401
+    
+    #get user notes
+    note = Notes.query.filter_by(user_id = current_user.user_id).first()
+    #get document analysis
+    analysis = get_or_create_analysis(note)
+    if not analysis.get("success"):
+        return {"success": False, 'error': analysis.get("error","Could not get document analysis for this note")}
 
     profile_result = create_user_study_profile(current_user.user_id)
     if not profile_result.get('success'):
