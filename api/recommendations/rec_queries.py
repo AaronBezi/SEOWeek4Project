@@ -4,12 +4,8 @@ import requests
 from api.openAI_api import download_file, extract_text
 from dotenv import load_dotenv
 from openai import OpenAI
-from typing import Literal
-from pydantic import BaseModel, Field  #This allows us to get correctly formatted json responses back
 from database.models import DocumentAnalysis,create_Doc_Analysis, Notes
 from database.database import db
-from collections import Counter
-from .structure import BookRankingResponse,BookSearchQueriesResponse
 
 
 load_dotenv()
@@ -18,8 +14,8 @@ books_client = os.getenv("BOOKS_KEY")
 GOOGLE_BOOKS_URL = os.getenv("BOOKS_URL")
 
 
-#pass in thw queries generated from open ai api to get the books from books api
-def search_books(query):
+#pass in thw queries generated from open ai api to get the books from books api return dictionary with sucess flag and books array
+def search_books(query: str):
     if not query or not query.strip(): return {"success": False, "error": "Search Query is empty"}
      
     try:

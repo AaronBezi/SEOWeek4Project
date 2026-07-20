@@ -149,6 +149,7 @@ def get_or_fetch_books(result: DocumentAnalysis):
         if cached:
             return {"success": True, "books": cached}
         
+        #if books doesnt exist already generate new books via an api call
         output = search_books(query)
         if not output.get("success"):
             return {"success": False, "error": output.get("error")}

@@ -1,13 +1,8 @@
 import os
 import io
-import requests
-from api.openAI_api import download_file, extract_text
 from dotenv import load_dotenv
 from openai import OpenAI
-from typing import Literal
-from pydantic import BaseModel, Field  #This allows us to get correctly formatted json responses back
-from database.models import DocumentAnalysis,create_Doc_Analysis, Notes
-from database.database import db
+from database.models import DocumentAnalysis
 import numpy as np
 
 load_dotenv()
