@@ -107,6 +107,12 @@
                     <span class="btn-icon">☰</span>
                     <span class="btn-text">Summarize Notes</span>
                 </button>
+
+                <a href="{{ url_for('pool_quiz', pool_id=pool.group_id) }}" class="task-btn quiz-toggle-btn" style="text-decoration: none;">
+                    <span class="btn-icon">&#9998;</span>
+                    <span class="btn-text">Create a Quiz</span>
+                </a>
+
             </div>
         </div>
 
