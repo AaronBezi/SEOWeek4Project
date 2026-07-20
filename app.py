@@ -309,7 +309,7 @@ def recommendations():
         return {"success": False, "error": rec_results.get("error","Could not build recommendations")}, 400
     return {"success": True, "recommendations": rec_results['books']}, 200
     # #get document analysis
-    # analysis = get_or_create_analysis(note)
+    # analysis = get_r_create_analysis(note)
     # if not analysis.get("success"):
     #     return {"success": False, 'error': analysis.get("error","Could not get document analysis for this note")}
 
