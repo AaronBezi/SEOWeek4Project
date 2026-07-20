@@ -111,7 +111,7 @@ class TestGetBooksQuery:
     def test_empty_analysis(self):
         result = get_books_query(None)
         print(result)
-        assert result == {"success": False, "error": "DocuementAnalysis is empty"}
+        assert result == {"success": False, "error": "DocumentAnalysis is empty"}
 
 class TestGetOrFetchBooks:
     def test_cached_books_no_api_call(self):
