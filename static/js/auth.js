@@ -59,10 +59,57 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+if (summarizeBtn) {
+    // A simple flag to absolutely lock out secondary threads
+    let isProcessing = false;
+
+    summarizeBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        // If it's already running, drop the click immediately!
+        if (isProcessing || summarizeBtn.disabled) return;
+
+        // Lock it down instantly
+        isProcessing = true;
+        summarizeBtn.disabled = true;
+        summarizeBtn.innerHTML = '<span class="btn-icon">☰</span> <span class="btn-text">Summarizing...</span>';
+
+        const poolId = fileInput ? fileInput.dataset.poolId : null;
+
+        fetch('/api/summarize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group_id: poolId ? parseInt(poolId) : null })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || "Could not generate summary.");
+                resetButtonState();
+            }
+        })
+        .catch(() => {
+            alert("Summarization failed.");
+            resetButtonState();
+        });
+    });
+
+    function resetButtonState() {
+        isProcessing = false;
+        summarizeBtn.disabled = false;
+        summarizeBtn.style.opacity = '1';
+        summarizeBtn.style.cursor = 'pointer';
+
+    summarizeBtn.innerHTML = `${fallbackIcon} <span class="btn-text">Summarize Notes</span>`;
+    }
+}
+/*
    if (summarizeBtn) {
         summarizeBtn.addEventListener('click', function () {
             summarizeBtn.disabled = true;
-            summarizeBtn.querySelector('.btn-text').textContent = 'Summarizing...';
+            summarizeBtn.innerHTML = '<span class="btn-icon">☰</span><span class="btn-text">Summarizing...</span>';
 
             const poolId = fileInput ? fileInput.dataset.poolId : null;
 
@@ -99,6 +146,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 });
+*/
 
 // Global drop down visibility controller function pinned directly to the root window object context
 window.toggleDropdown = function() {

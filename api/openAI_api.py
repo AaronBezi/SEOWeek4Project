@@ -1,5 +1,6 @@
 import os
 import io
+import json
 from markitdown import MarkItDown
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -28,7 +29,7 @@ def extract_text(file,extension):
 
 
 def generate_summary(note):
-    #combines both functions and promots open ai to summarize the docuement/
+    #combines both functions and prompts open ai to summarize the document
     if not note:
         return {"status": False, "error": "No notes found."}
 
@@ -40,7 +41,7 @@ def generate_summary(note):
             temperature = 0.2,
             messages = [
                 {"role": "system",
-                "content": "Summarize the following docuemnt, with no hallucianations and only user information inthe actual document"
+                "content": "Summarize the following docuemnt, with no hallucianations and only user information in the actual document"
                 },
                 
                 {"role": "user", "content": text}
@@ -52,47 +53,51 @@ def generate_summary(note):
         return {"success": False, "error": str(e)}
 
 
+import json
 
 
-    
+def generate_quiz_from_summary(summary_text):
+    """
+    Takes the generated summary and creates a 10-question quiz
+    (Multiple Choice and True/False) based strictly on that text.
+    """
+    if not summary_text:
+        return {"success": False, "error": "No summary content provided."}
 
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0.4,
 
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Create a 10-question practice quiz based strictly "
+                        "on the provided summary text. Mix multiple-choice and true/false questions. "
+                        "Do not include any external information or hallucinations.\n\n"
+                        "Return the quiz as a JSON object matching this exact structure:\n"
+                        "{\n"
+                        '  "quiz": [\n'
+                        "    {\n"
+                        '      "question_number": 1,\n'
+                        '      "type": "multiple_choice", # or "true_false"\n'
+                        '      "question": "The question text here?",\n'
+                        '      "options": ["Option A", "Option B", "Option C", "Option D"], # for true_false use ["True", "False"]\n'
+                        '      "correct_answer": "Option A"\n'
+                        "    }\n"
+                        "  ]\n"
+                        "}"
+                    )
+                },
+                {"role": "user", "content": f"Summary Text:\n\n{summary_text}"}
+            ]
+        )
 
+        # Parsing the JSON response from OpenAI
+        quiz_data = json.loads(response.choices[0].message.content)
+        return {"success": True, "quiz_data": quiz_data}
 
-
-
-
-
-
-
-#def generate_summary(notes_list):
-#     client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
-
-#     if not notes_list:
-#         return {"status": False, "error": "No notes found."}
-
-#     try:
-#         response = client.chat.completions.create(
-#             model="gpt-4o-mini",
-#             messages=[
-#                 {
-#                     "role": "system",
-#                     # enforcing it solely retrieve and summarize notes
-#                     "content": (
-#                         "This is a factual summarization tool. Do not assume or input ideas or concepts."
-#                         "Turn the provided notes into a clear 2 page markdown summmary without "
-#                         "unecessary information, intros, fillers, or outros."
-#                         "Strictly summarize the user's provided notes using only the facts present in the text."
-
-#                     )
-#                 },
-#                 {"role":"user", "content": f"Summarize these notes: \n\n{chr(10).join(notes_list)}"}
-#             ],
-#             # makes AI response more factual and straigh foward to avoid random responses
-#             temperature=0.2
-
-#         )
-#         return {"success": True, "summary": response.choices[0].message.content}
-
-#     except Exception:
-#         return {"success": False, "error": "Could not generate summary right now."}
+    except Exception as e:
+        return {"success": False, "error": str(e)}

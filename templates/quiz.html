@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice Quiz - Study Pool</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Pixel&family=Sofia+Sans:ital,wght@0,1..1000;1,1..1000&display=swap" rel="stylesheet">
+
+    <!-- External style sheet links -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/quiz.css') }}">
+</head>
+<body>
+
+    <header style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; box-sizing: border-box; width: 100%;">
+
+        <div class="logo" onclick="window.location.href='{{ url_for('home') }}'">STUDY POOL</div>
+        <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
+
+            <div class="pool-title">{{ pool.group_name if pool else 'Study Pool' }}</div>
+
+            {% if pool and current_user.is_authenticated and pool.created_by == current_user.user_id and pool.is_private %}
+            <div style="padding: 3px 8px; font-size: 0.85rem; background-color: rgba(243, 244, 246, 0.15); border-radius: 4px; border: 1px solid rgba(229, 231, 235, 0.2); white-space: nowrap;">
+                Invite code: <strong style="font-family: monospace;">{{ pool.invite_code }}</strong>
+            </div>
+            {% endif %}
+
+            <!-- Dropdown Menu System -->
+            <div class="menu-dropdown" style="position: relative; z-index: 1000; margin-left: 5px;">
+                <button class="menu-trigger" onclick="event.stopPropagation(); toggleDropdown();" aria-label="Open Menu">
+                    <span class="three-dots"></span>
+                </button>
+                <div id="myDropdown" class="dropdown-content">
+                    <a href="{{ url_for('home') }}">Home</a>
+                    <a href="{{ url_for('my_notes') }}">My Notes</a>
+                    <a href="{{ url_for('create_pool') }}">Create Pool</a>
+                    <a href="{{ url_for('join_pool') }}">Join a Different Pool</a>
+
+                    {% if my_pools %}
+                        <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 4px 0;">
+                        {% for p in my_pools %}
+                            <a href="{{ url_for('pool_space', pool_id=p.group_id) }}" {% if pool and p.group_id == pool.group_id %}style="font-weight: bold; background-color: #f8fafc;"{% endif %}>{{ p.group_name }}</a>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- WHITEBOARD -->
+    <div class="workspace-container">
+        <main class="notes-section">
+
+            <!-- WORKSPACE QUIZ VIEW -->
+            <div id="quiz-content-view" class="quiz-view-container">
+                <div class="progress-bar">
+                    <div id="progress"></div>
+                </div>
+
+                <div class="question-container">
+                    <p id="category" class="category-text">Practice Quiz</p>
+                    <h2 id="question">Generating Quiz...</h2>
+                </div>
+
+                <div class="answers-container" id="answers" style="display: none;">
+                </div>
+
+                <div class="status-bar">
+                    <p>Score: <span id="score">0</span></p>
+                    <p>Time Spent: <span id="time">0</span>s</p>
+                </div>
+
+                <!-- ACTIONS CONTAINER -->
+                <div style="display: flex; justify-content: center; align-items: center; margin-top: 16px;">
+                    <!-- CAPSULE START / RETRY -->
+                    <button id="start" class="start-btn" style="display: none; background-color: var(--btn-bg); color: #ffffff; box-shadow: 0 4px 15px rgba(0,0,0,0.25);">
+                        Take Quiz
+                    </button>
+                </div>
+            </div>
+
+            <!-- ACTION STACK -->
+            <div class="action-stack">
+                {% if pool and pool.group_id %}
+                    <a href="{{ url_for('pool_space', pool_id=pool.group_id) }}" class="task-btn" style="text-decoration: none;">
+                        <span class="btn-icon">&#9998;</span>
+                        <span class="btn-text">Back to Notes</span>
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('home') }}" class="task-btn" style="text-decoration: none;">
+                        <span class="btn-icon">&#9998;</span>
+                        <span class="btn-text">Back to Home</span>
+                    </a>
+                {% endif %}
+            </div>
+
+        </main>
+    </div>
+
+    <footer>
+        &copy; 2026 Study Pool
+    </footer>
+
+    <script>
+        const POOL_ID = parseInt("{{ pool.group_id if (pool and pool.group_id) else 0 }}") || null;
+
+        function toggleDropdown() {
+            document.getElementById("myDropdown").classList.toggle("show");
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.menu-trigger') && !event.target.matches('.three-dots')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- RUNTIME DATA -->
+    <script>
+        let questionsList = [];
+        let currentQuestionIdx = 0;
+        let scoreVal = 0;
+        let timerInterval;
+        let totalSecondsSpent = 0;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const startBtn = document.getElementById('start');
+            const categoryEl = document.getElementById('category');
+            const questionEl = document.getElementById('question');
+            const answersBox = document.getElementById('answers');
+            const scoreTracker = document.getElementById('score');
+            const timerTracker = document.getElementById('time');
+            const progressMeter = document.getElementById('progress');
+
+            function initQuizSpace() {
+                fetch('/api/generate_quiz', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ group_id: POOL_ID })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.quiz && data.quiz.length > 0) {
+                        questionsList = data.quiz;
+                        categoryEl.style.display = "none";
+                        questionEl.textContent = "Are you ready to jump in?";
+                        startBtn.style.display = "inline-block";
+                    } else {
+                        categoryEl.style.display = "none";
+                        answersBox.style.display = "none";
+                        startBtn.style.display = "none";
+                        questionEl.innerHTML = `<span style="color: #dc2626;">No notes uploaded to generate a quiz yet. Please share some notes first!</span>`;
+                    }
+                })
+                .catch(() => {
+                    categoryEl.style.display = "none";
+                    startBtn.style.display = "none";
+                    questionEl.textContent = "Failed to load quiz workspace. Please try again.";
+                });
+            }
+
+            initQuizSpace();
+
+            if (startBtn) {
+                startBtn.addEventListener('click', startNewQuiz);
+            }
+
+            function startNewQuiz() {
+                scoreVal = 0;
+                currentQuestionIdx = 0;
+                totalSecondsSpent = 0;
+                if (scoreTracker) scoreTracker.textContent = scoreVal;
+
+                startBtn.style.display = "none";
+                categoryEl.style.display = "block";
+                answersBox.style.display = "grid";
+
+                timerInterval = setInterval(() => {
+                    totalSecondsSpent++;
+                    if (timerTracker) timerTracker.textContent = totalSecondsSpent;
+                }, 1000);
+
+                showQuestion();
+            }
+
+            function showQuestion() {
+                if (!questionsList || questionsList.length === 0) return;
+
+                const progPercent = (currentQuestionIdx / questionsList.length) * 100;
+                if (progressMeter) progressMeter.style.width = `${progPercent}%`;
+
+                const currentData = questionsList[currentQuestionIdx];
+                categoryEl.textContent = `Category: ${currentData.category || "Practice Quiz"}`;
+                questionEl.textContent = currentData.question;
+
+                answersBox.innerHTML = '';
+                currentData.options.forEach((opt) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'answer';
+                    btn.textContent = opt;
+                    btn.dataset.correct = (opt === currentData.correct_answer);
+                    btn.addEventListener('click', handleAnswerSelection);
+                    answersBox.appendChild(btn);
+                });
+            }
+
+            function handleAnswerSelection(e) {
+                const chosenBtn = e.target;
+                const isCorrect = chosenBtn.dataset.correct === "true";
+
+                const optionButtons = answersBox.querySelectorAll('.answer');
+                optionButtons.forEach(btn => {
+                    btn.disabled = true;
+                    if (btn.dataset.correct === "true") {
+                        btn.classList.add('correct');
+                    } else if (btn === chosenBtn) {
+                        btn.classList.add('incorrect');
+                    }
+                });
+
+                if (isCorrect) {
+                    scoreVal += 10;
+                    if (scoreTracker) scoreTracker.textContent = scoreVal;
+                }
+
+                setTimeout(() => {
+                    currentQuestionIdx++;
+                    if (currentQuestionIdx < questionsList.length) {
+                        showQuestion();
+                    } else {
+                        endQuiz();
+                    }
+                }, 1500);
+            }
+
+            function endQuiz() {
+                clearInterval(timerInterval);
+                if (progressMeter) progressMeter.style.width = "100%";
+
+                categoryEl.textContent = "Complete!";
+                questionEl.textContent = `Excellent job! You finished with a total score of ${scoreVal} points in ${totalSecondsSpent} seconds.`;
+                answersBox.innerHTML = '';
+                answersBox.style.display = "none";
+
+                startBtn.style.display = "inline-block";
+                startBtn.textContent = "Take Quiz Again";
+            }
+        });
+    </script>
+</body>
+</html>
