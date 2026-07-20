@@ -174,7 +174,33 @@ class TestGetOrFetchBooks:
         mock_search.assert_not_called()
         assert output["success"] is False
     
+class TestRecommend:
+    def test_recommend_success(self):
+        #Integtration test between all recommend building blocks used on a valid input.
+        note = MagicMock()
+        analysis = MagicMock(embedding=[0.1, 0.2, 0.3])
+        analysis_result = {"success": True, "analysis": analysis}
 
+        # 6 candidate books so we can confirm only top 5 are returned
+        books = [MagicMock(embedding=[i, i, i]) for i in range(6)]
+        books_result = {"success": True, "books": books}
+
+        # similarity scores designed so ordering is fully determined and last book is dropped
+        similarity_scores = [0.5, 0.9, 0.1, 0.7, 0.3, 0.05]
+
+        with patch("api.recommendations.books_api.get_or_create_analysis", return_value=analysis_result), \
+            patch("api.recommendations.books_api.get_or_fetch_books", return_value=books_result), \
+            patch("api.recommendations.books_api.cosine_similarity", side_effect=similarity_scores) as mock_cos:
+
+            actual_result = recommend(note)
+
+        assert actual_result["success"] is True
+        assert len(actual_result["books"]) == 5
+        # highest score (0.9 -> books[1]) should be first
+        assert actual_result["books"][0] == books[1]
+        # lowest score (0.05 -> books[5]) should be excluded entirely
+        assert books[5] not in actual_result["books"]
+        assert mock_cos.call_count == 6
 
 
 
