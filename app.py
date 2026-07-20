@@ -15,6 +15,8 @@ import git
 import os
 import subprocess
 from dotenv import load_dotenv
+from flask_migrate import Migrate
+
 
 load_dotenv()
 
@@ -23,6 +25,7 @@ proxied = FlaskBehindProxy(app)  # handle codio redirection
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+migrate = Migrate(app,db)
 
 # Initialize Pusher for real-time chat spaces
 pusher_client = Pusher(
@@ -35,8 +38,8 @@ pusher_client = Pusher(
 
 db.init_app(app)
 
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
 
 login_manager = LoginManager()  # create the extension object
 login_manager.login_view = 'login'  # indicates route to send to if they hit a page marked @login_required
