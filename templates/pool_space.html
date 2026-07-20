@@ -13,7 +13,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
     <!-- Pusher Client library required for chat feature -->
     <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
-
 </head>
 <body>
 
@@ -28,7 +27,6 @@
 
         <div class="pool-title" style="font-weight: bold; font-size: 1.1rem; white-space: nowrap;">{{ pool.group_name }}</div>
 
-        {# Original logic check for unique owner access parameters intact #}
         {% if pool.created_by == current_user.user_id and pool.is_private %}
         <div style="padding: 3px 8px; font-size: 0.85rem; background-color: rgba(243, 244, 246, 0.15); border-radius: 4px; border: 1px solid rgba(229, 231, 235, 0.2); white-space: nowrap;">
             Invite code: <strong style="font-family: monospace;">{{ pool.invite_code }}</strong>
@@ -71,9 +69,10 @@
                     {% if note.file_path %}
                     <div class="note-card">
                         <a href="{{ note_urls[note.notes_id] }}" target="_blank">{{ note.note_name }}</a>
-                        {% if note.user_id == current_user.user_id %}
-                            <form method="POST" action="{{ url_for('delete_note', note_id=note.notes_id) }}">
-                                <button type="submit">Delete</button>
+                        {# Allows both the note owner AND the pool creator to delete documents seamlessly #}
+                        {% if note.user_id == current_user.user_id or pool.created_by == current_user.user_id %}
+                            <form method="POST" action="{{ url_for('delete_note', note_id=note.notes_id) }}" style="display: inline; margin-left: 10px;">
+                                <button type="submit" style="background-color: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Delete</button>
                             </form>
                         {% endif %}
                     </div>
@@ -83,7 +82,12 @@
                     {% endfor %}
                 </div>
 
-                <div id="summary-content" style="display:none;"></div>
+                <!-- Modern display placeholder box for the summaries -->
+                <div id="summary-view-area" style="display:none; margin-top: 25px; padding: 20px; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 8px;">
+                    <h3 style="margin-top: 0;"> Pool Space Summary</h3>
+                    <h3> </h3>
+                    <div id="summary-content" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;"></div>
+                </div>
 
                 <h2>Members</h2>
                 <ul class="member-list">
@@ -112,7 +116,6 @@
                     <span class="btn-icon">&#9998;</span>
                     <span class="btn-text">Create a Quiz</span>
                 </a>
-
             </div>
         </div>
 
@@ -121,6 +124,76 @@
     <script>
         const POOL_ID = "{{ pool.group_id }}";
         const CURRENT_USERNAME = "{{ current_user.username }}";
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const summarizeBtn = document.getElementById('summarize-btn');
+            const summaryViewArea = document.getElementById('summary-view-area');
+            const summaryContent = document.getElementById('summary-content');
+
+            if (summarizeBtn) {
+                let isProcessing = false;
+
+                const newBtn = summarizeBtn.cloneNode(true);
+                summarizeBtn.parentNode.replaceChild(newBtn, summarizeBtn);
+
+                newBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (isProcessing) return;
+
+                    isProcessing = true;
+                    newBtn.disabled = true;
+
+                    const btnText = newBtn.querySelector('.btn-text');
+                    if (btnText) {
+                        btnText.textContent = "Summarizing...";
+                    }
+
+                    fetch('/api/summarize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ group_id: parseInt(POOL_ID) })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        isProcessing = false;
+                        newBtn.disabled = false;
+
+                        if (btnText) {
+                            btnText.textContent = "Summarize Notes";
+                        }
+
+                        if (data.success) {
+                            // If your Python backend returns a raw text string
+                            if (typeof data.summary === 'string') {
+                                summaryViewArea.style.display = 'block';
+                                summaryContent.textContent = data.summary;
+                            }
+                            // Fallback rendering structure if data.summary arrives as an array
+                            else if (Array.isArray(data.summary)) {
+                                summaryViewArea.style.display = 'block';
+                                let htmlContent = '';
+                                data.summary.forEach(item => {
+                                    htmlContent += `<div style="margin-bottom: 15px;"><strong>${item.note_name || 'Note'}:</strong><p>${item.summary || item}</p></div><hr style="border-color: rgba(255,255,255,0.1);">`;
+                                });
+                                summaryContent.innerHTML = htmlContent;
+                            }
+                        } else {
+                            alert(data.error || "Could not generate pool space summary.");
+                        }
+                    })
+                    .catch(err => {
+                        isProcessing = false;
+                        newBtn.disabled = false;
+                        if (btnText) {
+                            btnText.textContent = "Summarize Notes";
+                        }
+                        alert("An unexpected error occurred while communicating with the AI service.");
+                    });
+                });
+            }
+        });
     </script>
 
     <!-- Global functions loaded first so drop-down elements run active -->

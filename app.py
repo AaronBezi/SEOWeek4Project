@@ -267,18 +267,26 @@ def send_message(pool_id):
     return {'success': True}, 200
 
 
+
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
     # query the users notes and summarize them one by one displaying them to the screen
     if not current_user.is_authenticated:
         return {'error': 'User not logged in'}, 401
 
-    notes = Notes.query.filter_by(user_id=current_user.user_id).all()  # fetch all notes for this user
+    data = request.get_json() or {}
+
+    group_id = data.get('group_id')
+
+    if group_id:
+        notes = Notes.query.filter_by(group_id=group_id).all()
+    else:
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
+
     if not notes:
         return {'error': 'No notes found to summarize'}, 400
 
     summaries = []
-
     for note in notes:
         result = generate_summary(note)
         if not result.get('success'):
@@ -286,12 +294,6 @@ def summarize():
         summaries.append({"note_name": note.note_name, "summary": result['summary']})
 
     return {"success": True, "summary": summaries}, 200
-    # notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
-
-    # if not result.get('success'):
-    #     return {'error': result.get('error', 'Could not generate summary')}, 500
-
-    # return {'success': True, 'summary': result['summary']}, 200
 
 
 @app.route("/api/recommendations", methods=['POST'])
@@ -312,6 +314,7 @@ def recommendations():
         return {'success': False, 'error': books_result.get('error', 'Could not retrieve books')}, 500
 
     return {'success': True, 'recommendations': books_result['books']}, 200
+
 
 @app.route("/api/generate_quiz", methods=['POST'])
 def generate_quiz():
@@ -358,6 +361,13 @@ def generate_quiz():
 def pool_quiz(pool_id):
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
+
+    if pool_id == 0:
+        pool = {
+            "group_id": 0,
+            "group_name": "Personal Notes"
+        }
+        return render_template('quiz.html', pool=pool)
 
     pool = StudyGroup.query.get_or_404(pool_id)
     return render_template('quiz.html', pool=pool)
