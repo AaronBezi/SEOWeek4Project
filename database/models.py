@@ -126,6 +126,7 @@ class DocumentAnalysis(db.Model):
     keywords = db.Column(db.JSON, nullable=False)
     academic_level = db.Column(db.String(150), nullable=False)
     summary = db.Column(db.Text, nullable=False)
+    
 
 def create_Doc_Analysis(note_id, metadata):
     return DocumentAnalysis(note_id=note_id, subject=metadata['subject'],
