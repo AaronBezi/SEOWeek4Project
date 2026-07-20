@@ -202,6 +202,37 @@ class TestRecommend:
         assert books[5] not in actual_result["books"]
         assert mock_cos.call_count == 6
 
+    def test_fetch_book_fail(self):
+        note = MagicMock()
+        analysis = MagicMock(embeddings=[-0.34,0.23,1.2])
+        analysis_result = {"success":True, "analysis": analysis}
+
+        with patch("api.recommendations.books_api.get_or_create_analysis", return_value=analysis_result), \
+            patch("api.recommendations.books_api.get_or_fetch_books", return_value={"success":False,"error":"books api down"}) as mock_books, \
+            patch("api.recommendations.books_api.cosine_similarity") as mock_cos:
+
+            actual_result = recommend(note)
+        
+        mock_books.assert_called_once_with(analysis_result)
+        mock_cos.assert_not_called()
+        assert actual_result == {"success": False, "error": "books api down"}
+    
+    
+    def test_analysis_failiure(self):
+        #test failure message is returned when analyze_document function call fails
+        note = MagicMock()
+        with patch("api.recommendations.books_api.get_or_create_analysis", return_value={"success": False, "error":"could not analyze"}) as mock_analysis, \
+            patch("api.recommendations.books_api.get_or_fetch_books") as mock_books:
+
+            actual_result = recommend(note)
+
+        mock_books.assert_not_called()
+        assert actual_result == {"success": False, "error": "could not analyze"}
+        
+
+        
+
+
 
 
 
