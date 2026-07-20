@@ -74,6 +74,11 @@
                     <span class="btn-icon">☰</span>
                     <span class="btn-text">Summarize Notes</span>
                 </button>
+                <!-- Added personal notes quiz generation link -->
+                <a href="{{ url_for('pool_quiz', pool_id=0) }}" class="task-btn quiz-toggle-btn" style="text-decoration: none;" id="personal-quiz-btn">
+                    <span class="btn-icon">&#9998;</span>
+                    <span class="btn-text">Create a Quiz</span>
+                </a>
             </div>
         </div>
 
@@ -83,5 +88,147 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadBtn = document.getElementById('upload-btn');
+            const fileInput = document.getElementById('file-input');
+            const summarizeBtn = document.getElementById('summarize-btn');
+            const summaryContent = document.getElementById('summary-content');
+            const quizBtn = document.getElementById('personal-quiz-btn');
+
+            // --- Document Upload Feature Implementation ---
+            if (uploadBtn && fileInput) {
+                // When you click the styled upload button, open the invisible system file menu box
+                uploadBtn.addEventListener('click', function() {
+                    fileInput.click();
+                });
+
+                // Detect when a user picks a file to submit
+                fileInput.addEventListener('change', function() {
+                    if (!fileInput.files || fileInput.files.length === 0) return;
+
+                    const file = fileInput.files[0];
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    // Pass null or omit group_id because these are personal workspace uploads
+                    formData.append('group_id', '');
+
+                    const btnText = uploadBtn.querySelector('.btn-text');
+                    if (btnText) btnText.textContent = "Uploading...";
+                    uploadBtn.disabled = true;
+
+                    fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => {
+                        if (res.redirected) {
+                            window.location.href = res.url;
+                            return;
+                        }
+                        return res.json().then(data => {
+                            if (data.success || res.ok) {
+                                window.location.reload();
+                            } else {
+                                alert(data.error || "File upload failed.");
+                                resetUploadBtn();
+                            }
+                        });
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("An unexpected transport error occurred during the document upload process.");
+                        resetUploadBtn();
+                    });
+                });
+            }
+
+            function resetUploadBtn() {
+                if (uploadBtn) {
+                    uploadBtn.disabled = false;
+                    const btnText = uploadBtn.querySelector('.btn-text');
+                    if (btnText) btnText.textContent = "Upload Doc";
+                }
+            }
+
+            // --- Quiz Pathing Configuration ---
+            if (quizBtn) {
+                quizBtn.addEventListener('click', function(e) {
+                    // Allows default navigation to your quiz routing blueprint view template
+                });
+            }
+
+            // --- Document Text Processing Engine (Summarize) ---
+            if (summarizeBtn) {
+                let isProcessing = false;
+
+                const newBtn = summarizeBtn.cloneNode(true);
+                summarizeBtn.parentNode.replaceChild(newBtn, summarizeBtn);
+
+                newBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (isProcessing) return;
+
+                    isProcessing = true;
+                    newBtn.disabled = true;
+
+                    const btnText = newBtn.querySelector('.btn-text');
+                    if (btnText) {
+                        btnText.textContent = "Summarizing...";
+                    }
+
+                    fetch('/api/summarize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ group_id: null })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        isProcessing = false;
+                        newBtn.disabled = false;
+
+                        if (btnText) {
+                            btnText.textContent = "Summarize Notes";
+                        }
+
+                        if (data.success) {
+                            if (summaryContent) {
+                                summaryContent.style.display = 'block';
+                                summaryContent.style.marginTop = '20px';
+                                summaryContent.style.padding = '15px';
+                                summaryContent.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                                summaryContent.style.border = '1px solid rgba(0,0,0,0.1)';
+                                summaryContent.style.borderRadius = '8px';
+                                summaryContent.style.whiteSpace = 'pre-wrap';
+
+                                if (typeof data.summary === 'string') {
+                                    summaryContent.innerHTML = `<h3>Personal Summary Workspace</h3><div>${data.summary}</div>`;
+                                } else if (Array.isArray(data.summary)) {
+                                    let htmlContent = '<h3>Personal Summary Workspace</h3>';
+                                    data.summary.forEach(item => {
+                                        htmlContent += `<div style="margin-bottom: 15px;"><strong>${item.note_name || 'Note'}:</strong><p>${item.summary || item}</p></div><hr style="border-color: rgba(255,255,255,0.1);">`;
+                                    });
+                                    summaryContent.innerHTML = htmlContent;
+                                }
+                            }
+                        } else {
+                            alert(data.error || "Could not generate summary.");
+                        }
+                    })
+                    .catch(err => {
+                        isProcessing = false;
+                        newBtn.disabled = false;
+                        if (btnText) {
+                            btnText.textContent = "Summarize Notes";
+                        }
+                        alert("An unexpected error occurred while communicating with the AI service.");
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>
