@@ -7,7 +7,8 @@ from database.models import User, Notes, Notes_Summary, StudyGroup, GroupMembers
 from database.database import db
 from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
 from api.openAI_api import generate_summary
-from api.recommendations.rec_queries import create_user_study_profile, gen_books, retrieve_books
+#from api.recommendations.rec_queries import create_user_study_profile, gen_books, retrieve_books
+from api.recommendations.books_api import recommend
 from pusher import Pusher
 import secrets
 import git
@@ -298,27 +299,30 @@ def summarize():
 def recommendations():
     if not current_user.is_authenticated:
         return {'error': 'User not logged in'}, 401
-    
     #get user notes
     note = Notes.query.filter_by(user_id = current_user.user_id).first()
-    #get document analysis
-    analysis = get_or_create_analysis(note)
-    if not analysis.get("success"):
-        return {"success": False, 'error': analysis.get("error","Could not get document analysis for this note")}
+    rec_results = recommend(note)
+    if not rec_results.get("success"):
+        return {"success": False, "error": rec_results.get("error","Could not build recommendations")}, 400
+    return {"success": True, "recommendations": rec_results['books']}, 200
+    # #get document analysis
+    # analysis = get_or_create_analysis(note)
+    # if not analysis.get("success"):
+    #     return {"success": False, 'error': analysis.get("error","Could not get document analysis for this note")}
 
-    profile_result = create_user_study_profile(current_user.user_id)
-    if not profile_result.get('success'):
-        return {'success': False, 'error': profile_result.get('error', 'Could not build study profile')}, 400
+    # profile_result = create_user_study_profile(current_user.user_id)
+    # if not profile_result.get('success'):
+    #     return {'success': False, 'error': profile_result.get('error', 'Could not build study profile')}, 400
 
-    queries_result = gen_books(profile_result)
-    if not queries_result.get('success'):
-        return {'success': False, 'error': queries_result.get('error', 'Could not generate search queries')}, 500
+    # queries_result = gen_books(profile_result)
+    # if not queries_result.get('success'):
+    #     return {'success': False, 'error': queries_result.get('error', 'Could not generate search queries')}, 500
 
-    books_result = retrieve_books(queries_result)
-    if not books_result.get('success'):
-        return {'success': False, 'error': books_result.get('error', 'Could not retrieve books')}, 500
+    # books_result = retrieve_books(queries_result)
+    # if not books_result.get('success'):
+    #     return {'success': False, 'error': books_result.get('error', 'Could not retrieve books')}, 500
 
-    return {'success': True, 'recommendations': books_result['books']}, 200
+    # return {'success': True, 'recommendations': books_result['books']}, 200
 
 
 @app.route("/update_server", methods=['POST'])

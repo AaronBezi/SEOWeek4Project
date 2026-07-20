@@ -4,8 +4,7 @@ from unittest.mock import patch, MagicMock
 from api.openAI_api import generate_summary,download_file,extract_text
 from database.models import Notes,User, DocumentAnalysis, create_Doc_Analysis
 from types import SimpleNamespace
-from api.recommendations.books_api import analyze_document, DocumentAnalysisResponse, get_or_create_analysis
-from api.recommendations.rec_queries import gen_books, search_books, retrieve_books, rank_books, generate_recommendations
+from api.recommendations.books_api import analyze_document, DocumentAnalysisResponse, get_or_create_analysis, get_books_query, get_or_fetch_books, recommend
 
 
 class TestRec:
@@ -27,17 +26,17 @@ class TestRec:
 
             result = analyze_document("Calc1, the limit definition of the derivative")
 
-            print(result)
-            assert result['success'] is True
-            assert result['result'] == {
-                "subject": "Calc1",
-                "topics": ["Derivatives", "Limits"],
-                "keywords": ["derivative", "approaching 0"],
-                "academic_level" :"undergraduate",
-                "summary" :"Notes covering derivatives and limits"
-            }
+        print(result)
+        assert result['success'] is True
+        assert result['result'] == {
+            "subject": "Calc1",
+            "topics": ["Derivatives", "Limits"],
+            "keywords": ["derivative", "approaching 0"],
+            "academic_level" :"undergraduate",
+            "summary" :"Notes covering derivatives and limits"
+        }
 
-            mock_client.chat.completions.parse.assert_called_once()
+        mock_client.chat.completions.parse.assert_called_once()
     def test_get_or_build(self):
         note = MagicMock(notes_id=1)
         existing_analysis = MagicMock(embedding=[0.1, 0.2, 0.3])
@@ -56,12 +55,12 @@ class TestRec:
 
             result = get_or_create_analysis(note)
 
-            mock_analyze.assert_not_called()
-            mock_get_embedding.assert_not_called()
-            mock_create.assert_called_once_with(note.notes_id, existing_analysis, "hash123", existing_analysis.embedding)
-            mock_db.session.add.assert_called_once_with(linked_analysis)
-            mock_db.session.commit.assert_called_once()
-            assert result == linked_analysis
+        mock_analyze.assert_not_called()
+        mock_get_embedding.assert_not_called()
+        mock_create.assert_called_once_with(note.notes_id, existing_analysis, "hash123", existing_analysis.embedding)
+        mock_db.session.add.assert_called_once_with(linked_analysis)
+        mock_db.session.commit.assert_called_once()
+        assert result == linked_analysis
         
 
     def test_get_or_build_new(self):
@@ -89,13 +88,94 @@ class TestRec:
 
             result = get_or_create_analysis(note)
 
-            mock_analyze.assert_called_once_with("organic chem notes")
-            mock_build_text.assert_called_once_with(parsed_result)
-            mock_get_embedding.assert_called_once_with("embedding text")
-            mock_create.assert_called_once()
-            mock_db.session.add.assert_called_once_with(new_analysis_obj)
-            mock_db.session.commit.assert_called_once()
-            assert result == {"success": True, "analysis": new_analysis_obj}
-                
+        mock_analyze.assert_called_once_with("organic chem notes")
+        mock_build_text.assert_called_once_with(parsed_result)
+        mock_get_embedding.assert_called_once_with("embedding text")
+        mock_create.assert_called_once()
+        mock_db.session.add.assert_called_once_with(new_analysis_obj)
+        mock_db.session.commit.assert_called_once()
+        assert result == {"success": True, "analysis": new_analysis_obj}
+
+class TestGetBooksQuery:
+    def test_get_books(self):
+        analysis = MagicMock(subject="Linear Algebra", keywords = ["eigenvalues", "vector spaces", "transformations", "DONT"])
+        query = get_books_query(analysis)
+
+        print(query)
+        assert 'subject:"Linear Algebra"' in query
+        assert '"eigenvalues"' in query
+        assert '"vector spaces"' in query
+        assert '"transformations"' in query
+        assert '"DONT"' not in query
+    
+    def test_empty_analysis(self):
+        result = get_books_query(None)
+        print(result)
+        assert result == {"success": False, "error": "DocuementAnalysis is empty"}
+
+class TestGetOrFetchBooks:
+    def test_cached_books_no_api_call(self):
+        #test that a cached book is returned instead of calling the api to generate new books
+        analysis = MagicMock(subject="Calculus")
+        result = {"success": True, "analysis": analysis}
+        cached_books = [MagicMock(), MagicMock()]
+
+        with patch("api.recommendations.books_api.get_books_query", return_value='subject: "Algebra"'), \
+            patch("api.recommendations.books_api.Book") as mock_book, \
+            patch("api.recommendations.books_api.search_books") as mock_search, \
+            patch("api.recommendations.books_api.get_embedding") as mock_get_embedding,\
+            patch("api.recommendations.books_api.db") as mock_db:
+
+            mock_book.query.filter.return_value.limit.return_value.all.return_value = cached_books
+            output = get_or_fetch_books(result)
+
+        mock_search.assert_not_called()
+        mock_get_embedding.assert_not_called()
+        mock_db.session.commit.assert_not_called()
+        assert output == {"success": True, "books": cached_books}
+
+    def test_no_cache(self):
+        #test books api is called and new books generated
+        analysis = MagicMock(subject="History")
+        result = {"success": True, "analysis": analysis}
+
+        data = {
+            "book_id": "hello12",
+            "title": "History 1010",
+            "authors": ["Pink Panthres"],
+            "description": "History Textbook.",
+            "categories": ["History"],
+            "preview_link": "https://example.com/preview"
+        }
+        with patch("api.recommendations.books_api.get_books_query", return_value='subject: "History"'), \
+            patch("api.recommendations.books_api.Book") as mock_book, \
+            patch("api.recommendations.books_api.search_books", return_value ={"success": True, "books": [data]}) as mock_search, \
+            patch("api.recommendations.books_api.get_embedding", return_value = [0.1,0.4,0.32]) as mock_get_embedding,\
+            patch("api.recommendations.books_api.db") as mock_db:
+
+            mock_book.query.filter.return_value.limit.return_value.all.return_value = []
+            mock_book.query.filter_by.return_value.first.return_value = None
+
+            output = get_or_fetch_books(result)
+        
+        mock_search.assert_called_once_with('subject: "History"')
+        mock_get_embedding.assert_called_once_with("History 1010 History Textbook. ['History']")
+        mock_db.session.add.assert_called_once()
+        mock_db.session.commit.assert_called_once()
+        assert output["success"] is True
+        assert len(output["books"]) == 1
+    
+    def test_failed_analysis_no_api_call(self):
+        result = {"success": False, "error": "analysis failed"}
+
+        with patch("api.recommendations.books_api.search_books") as mock_search:
+            output = get_or_fetch_books(result)
+        
+        mock_search.assert_not_called()
+        assert output["success"] is False
+    
+
+
+
 
 
