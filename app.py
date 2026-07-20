@@ -6,7 +6,7 @@ from forms import RegistrationForm, LoginForm, CreatePoolForm, JoinPoolForm
 from database.models import User, Notes, Notes_Summary, StudyGroup, GroupMembership, Message
 from database.database import db
 from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
-from api.openAI_api import generate_summary
+from api.openAI_api import generate_summary, generate_quiz_from_summary
 from api.recommendations.rec_queries import create_user_study_profile, gen_books, retrieve_books
 from pusher import Pusher
 import secrets
@@ -267,18 +267,26 @@ def send_message(pool_id):
     return {'success': True}, 200
 
 
+
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
     # query the users notes and summarize them one by one displaying them to the screen
     if not current_user.is_authenticated:
         return {'error': 'User not logged in'}, 401
 
-    notes = Notes.query.filter_by(user_id=current_user.user_id).all()  # fetch all notes for this user
+    data = request.get_json() or {}
+
+    group_id = data.get('group_id')
+
+    if group_id:
+        notes = Notes.query.filter_by(group_id=group_id).all()
+    else:
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
+
     if not notes:
         return {'error': 'No notes found to summarize'}, 400
 
     summaries = []
-
     for note in notes:
         result = generate_summary(note)
         if not result.get('success'):
@@ -286,12 +294,6 @@ def summarize():
         summaries.append({"note_name": note.note_name, "summary": result['summary']})
 
     return {"success": True, "summary": summaries}, 200
-    # notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
-
-    # if not result.get('success'):
-    #     return {'error': result.get('error', 'Could not generate summary')}, 500
-
-    # return {'success': True, 'summary': result['summary']}, 200
 
 
 @app.route("/api/recommendations", methods=['POST'])
@@ -313,6 +315,62 @@ def recommendations():
 
     return {'success': True, 'recommendations': books_result['books']}, 200
 
+
+@app.route("/api/generate_quiz", methods=['POST'])
+def generate_quiz():
+    # queries the workspace context, validates uploaded documents, and builds a quiz layout
+    if not current_user.is_authenticated:
+        return {'error': 'User not logged in'}, 401
+
+    data = request.get_json() or {}
+    group_id = data.get('group_id') or None
+
+    # Query notes depending on whether we are inside a pool space or checking user notes
+    if group_id:
+        notes = Notes.query.filter_by(group_id=group_id).all()
+    else:
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
+
+    # Verify user has notes uploaded
+    if not notes:
+        return {"success": False, "error": "No notes found to summarize"}, 200
+
+    summaries_text = ""
+
+    # Process files one by one converting text elements into more readable text
+    for note in notes:
+        result = generate_summary(note)
+        if result.get('success'):
+            summaries_text += f"\nDocument Name ({note.note_name}):\n{result['summary']}\n"
+
+    if not summaries_text.strip():
+        return {"success": False, "error": "Could not generate summary"}, 200
+
+    quiz_result = generate_quiz_from_summary(summaries_text)
+
+    if not quiz_result.get('success'):
+        return {"success": False, "error": quiz_result.get('error')}, 500
+
+    raw_data = quiz_result.get("quiz_data", {})
+    quiz_questions = raw_data.get("quiz", [])
+
+    return {"success": True, "quiz": quiz_questions}, 200
+
+
+@app.route("/pool/<int:pool_id>/quiz")
+def pool_quiz(pool_id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+
+    if pool_id == 0:
+        pool = {
+            "group_id": 0,
+            "group_name": "Personal Notes"
+        }
+        return render_template('quiz.html', pool=pool)
+
+    pool = StudyGroup.query.get_or_404(pool_id)
+    return render_template('quiz.html', pool=pool)
 
 @app.route("/update_server", methods=['POST'])
 def webhook():

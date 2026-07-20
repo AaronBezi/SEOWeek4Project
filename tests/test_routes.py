@@ -110,7 +110,7 @@ class TestSummarizeRoute:
     def test_summarize_no_notes_returns_400(self, client):
         register_user(client)
         login_user_via_form(client)
-        response = client.post('/api/summarize')
+        response = client.post('/api/summarize', json={})
         assert response.status_code == 400
 
     def test_summarize_returns_200_with_summary(self, client, db, monkeypatch):
@@ -119,7 +119,7 @@ class TestSummarizeRoute:
         login_user_via_form(client)
         user = db.session.query(User).filter_by(email='test@example.com').first()
         Notes.create_Note(user.user_id, 'test.pdf', '/files/test.pdf')
-        response = client.post('/api/summarize')
+        response = client.post('/api/summarize', json={})
         assert response.status_code == 200
         data = response.get_json()
         assert data['success'] is True
@@ -132,7 +132,7 @@ class TestSummarizeRoute:
         login_user_via_form(client)
         user = db.session.query(User).filter_by(email='test@example.com').first()
         Notes.create_Note(user.user_id, 'test.pdf', '/files/test.pdf')
-        response = client.post('/api/summarize')
+        response = client.post('/api/summarize', json={})
         assert response.status_code == 500
 
 
@@ -197,14 +197,31 @@ class TestChat:
 
 class TestQuiz:
     def test_generate_quiz_unauthenticated_returns_401(self, client):
-        # POST to /api/quiz without login and assert 401
-        pass
+        response = client.post('/api/generate_quiz', json={})
+        assert response.status_code == 401
 
     def test_generate_quiz_no_notes_returns_400(self, client):
-        # login with no notes uploaded, POST to /api/quiz, assert 400
-        pass
+        register_user(client)
+        login_user_via_form(client)
+        response = client.post('/api/generate_quiz', json={})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['success'] is False
+        assert 'No notes found' in data['error']
 
     def test_generate_quiz_returns_questions(self, client, db, monkeypatch):
-        # monkeypatch quiz generation, login, add a note, POST to /api/quiz
-        # assert 200 and response contains a list of questions
-        pass
+        monkeypatch.setattr('app.generate_summary', lambda note: {'success': True, 'summary': 'Fake summary text'})
+        monkeypatch.setattr('app.generate_quiz_from_summary', lambda text: {
+            'success': True,
+            'quiz_data': {'quiz': [{'question': 'What is X?', 'answer': 'X is Y.'}]}
+        })
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        Notes.create_Note(user.user_id, 'test.pdf', '/files/test.pdf')
+        response = client.post('/api/generate_quiz', json={})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['success'] is True
+        assert isinstance(data['quiz'], list)
+        assert data['quiz'][0]['question'] == 'What is X?'
