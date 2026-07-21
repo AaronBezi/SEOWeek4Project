@@ -5,9 +5,13 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from typing import Literal
 from pydantic import BaseModel, Field  #This allows us to get correctly formatted json responses back
-from database.models import DocumentAnalysis,create_Doc_Analysis, Notes
+from database.models import DocumentAnalysis,create_Doc_Analysis, Notes, Book
 from database.database import db
+from .embed import get_embedding, build_embedding_text, cosine_similarity
+from .rec_queries import search_books
 from collections import Counter
+from api.hashing import content_hash
+
 
 
 
@@ -27,14 +31,11 @@ class DocumentAnalysisResponse(BaseModel):
 
 
 #--------------------------------------------PHASE 1: PARSING DOCUMENTS FOR METADATA FOR GOOGLE BOOKS API---------------------------
-#Takes a note from supabase storage extracts its contents and pass into openai api to get metadata for books api
-def analyze_document(note):
-    if not note:
-        return {"success": False, "error": "Note is empty"}
+#Takes a extarcted note text from supabase storage extracts its contents and pass into openai api to get metadata for books api
+#This function is ony called if an analysis for the note doesnt exist already
+def analyze_document(document_text):
     
     try:
-        file_bytes,ext= download_file(note)
-        document_text = extract_text(file_bytes,ext)
         if not document_text or not document_text.strip():  #protects aganist empty documents
             return {"success": False, "error": "No document found to analyze."}
         response = open_client.chat.completions.parse(
@@ -68,41 +69,42 @@ def analyze_document(note):
 
 
 #------------------------------------PHASE 2: SAVE DOCUMENT ANALYSIS TO DATABASE-----------------------------------------
-#Saves document analysis for users/groups notes to database
-def save_document_analysis(note,analysis):
+#If existing analysis already exist just return, if it doesn't exist create object and save to database. Tkaes in a note object from the user
+def get_or_create_analysis(note):
     if not note:
         return {"success": False, "error": "Note is empty"}
-
-    if not isinstance(analysis,dict):
-        return {"success": False, "error": "Invalid analysis result"}
-    #analysis failed or is empty
-    if not analysis or not analysis.get("success"):
-        return {"success": False, "error": analysis.get("error","Document analysis failed")}
     
-    metadata = analysis.get("result")
+    file_bytes,ext = download_file(note)
+    document_text = extract_text(file_bytes,ext)
+    content_h = content_hash(document_text) #creates the hash for the text
 
-    if not metadata:
-        return {"success": False, "error": "metadata is empty"}
-
+    #new chnange: query by hash instead so we dont analyze notes with similar contents
     try:
-        if not note.notes_id:
-            return {"success": False, "result": "Notes ID is not correct"}
-        analysis_exist = DocumentAnalysis.query.filter_by(note_id = note.notes_id).first()
+        analysis_exist = DocumentAnalysis.query.filter_by(content_hash= content_h).first()
 
-        #anlysis for this note exist just add the existing data
+        #anlysis for this note exist just add the existing data(to avoid naming errors)
         if analysis_exist:
-            analysis_exist.subject = metadata['subject']
-            analysis_exist.topics = metadata['topics']
-            analysis_exist.keywords = metadata['keywords']
-            analysis_exist.academic_level = metadata['academic_level']
-            analysis_exist.summary = metadata['summary']
-        else:
-            analysis_exist = create_Doc_Analysis(note.notes_id,metadata)
+            linked = create_Doc_Analysis(note.notes_id,analysis_exist,content_h,analysis_exist.embedding)
+            db.session.add(linked)
+            db.session.commit()
+            return linked
+
+        #if analysis doesnt exist already create one then add to database
+            
+        metadata = analyze_document(document_text)   #returns document response format
+        if not metadata.get("success"):
+            return {"success": False, "error": metadata.get("error")}
+        if not metadata.get("result"):
+            return {"success": False, "error": "analysis is empty"}
         
-            db.session.add(analysis_exist)
+        #build and store the vector embedding for the new docuemnt analysis
+        result = metadata.get("result")
+        embedding = get_embedding(build_embedding_text(result))
+        analysis = create_Doc_Analysis(note.notes_id,metadata.get("result"),content_h,embedding)
+        db.session.add(analysis)
         db.session.commit()
         
-        return {"success": True, "analysis_id": analysis_exist.analysis_id}
+        return {"success": True, "analysis": analysis}  #return type: DocumentAnalysis Object
     
     except KeyError as error:
         db.session.rollback()
@@ -112,36 +114,137 @@ def save_document_analysis(note,analysis):
         db.session.rollback()
         return {"success": False, "error": str(e)}
 
-#-----------------------------PHASE 3: COMBINE ANALYZE AND SAVE DOCUEMNTS-------------------------
-def analyze_and_save_analysis(note):
-    #Generate an analysis for a given note then save the analysis to the database
-    analysis = analyze_document(note)
-    #if analysi sfailed return the error message
-    if not analysis.get("success"):
-        return analysis
+
+
+
+#Creates the q field for the googl books api that queries creates query string from Docanalysis object
+def get_books_query(analysis: DocumentAnalysis):
+    #output: Text string for books api query
+    text = []
+    if not analysis:
+        return {"success": False, "error": "DocumentAnalysis is empty"}
     
-    return save_document_analysis(note,analysis)
+    if analysis.subject:
+        text.append(f'subject:"{analysis.subject}"')
+    #get the top 3 keywords from the object
+    if analysis.keywords:
+        top_keywords = analysis.keywords[:3]
+        key_terms = " ".join(f'"{kw}"' for kw in top_keywords)
+        text.append(key_terms)
+    
+    query = " ".join(text)
+    return query.strip()
+
+#takes in a document analysis object and fetches books from the google books api
+
+def get_or_fetch_books(result: DocumentAnalysis):
+    if not result or not result.get("success"):
+        return {"success": False, "error": "Empty analysis object or failed analysis created"}
+    try:
+        analysis = result.get("analysis")
+        query = get_books_query(analysis)
+        cached = Book.query.filter(Book.categories.contains(analysis.subject)).limit(10).all()
+        
+        #if Book entry already exist then just return it no need to do another api call
+        if cached:
+            return {"success": True, "books": cached}
+        
+        #if books doesnt exist already generate new books via an api call
+        output = search_books(query)
+        if not output.get("success"):
+            return {"success": False, "error": output.get("error")}
+        
+        candidates = output.get("books")
+        books = []
+        for res in candidates:
+            existing = Book.query.filter_by(google_books_id=res['book_id']).first()
+            #if book existing already append and continue with the next book else create new book object
+            if existing:
+                books.append(existing)
+                continue
+            embedding = get_embedding(f"{res['title']} {res['description']} {res['categories']}")
+            new_book = Book(
+                google_books_id = res["book_id"], title = res["title"],
+                authors = res["authors"],
+                description = res["description"],
+                categories = res["categories"],
+                embedding = embedding,
+                preview_link = res["preview_link"])
+            db.session.add(new_book)
+            books.append(new_book)
+        db.session.commit()
+        return {"success": True, "books": books}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+
+
+#takes in a user note uses the mebdding to perform a cosine similarity of the queried books
+#output a list of books
+def recommend(note: Notes):
+    try:
+        result = get_or_create_analysis(note)
+        if not result.get("success"):
+            return {"success": False, "error": result.get("error","Analysis is empty")}
+        analysis = result.get("analysis")
+        #generates the books or fetches from existign cache
+        book_results =  get_or_fetch_books(result)
+        if not book_results.get("success"):
+            return {"success": False, "error": book_results.get("error","Candidates not geenrated")}
+        candidates = book_results.get("books")
+        scored = [(book, cosine_similarity(analysis.embedding,book.embedding)) for book in candidates]
+        #sort by highest score: higher similairity means the text are more related
+        scored.sort(key=lambda x: x[1],reverse=True)
+        #return the top 5 highest scored books
+        recommendations = [book for book,_ in scored[:5]]
+        return {"success": True, "books":recommendations}
+    except Exception as e:
+        return {"success": False, "erorr": str(e)}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# -----------------------------PHASE 3: COMBINE ANALYZE AND SAVE DOCUEMNTS-------------------------
+# def analyze_and_save_analysis(note):
+#     #Generate an analysis for a given note then save the analysis to the database
+#     analysis = analyze_document(note)
+#     #if analysi sfailed return the error message
+#     if not analysis.get("success"):
+#         return analysis
+    
+#     return save_document_analysis(note,analysis)
 
 
 #------------------------PHASE 4: Combine the document analysis for a user or gorup study pool to use as a study profile-----
 #get analyses for notes without a analysis
-def gen_missing_analyses(notes):
-    if not notes:
-        return {"success": False, "error": "No notes provided"}
-    try:
-        for note in notes:
-            #get analysis for each note if nothing returned create one
-            analysis = DocumentAnalysis.query.filter_by(note_id=note.notes_id).first()
-            if not analysis:
-                analysis_result = analyze_document(note)
+# def gen_missing_analyses(notes):
+#     if not notes:
+#         return {"success": False, "error": "No notes provided"}
+#     try:
+#         for note in notes:
+#             #get analysis for each note if nothing returned create one
+#             analysis = DocumentAnalysis.query.filter_by(note_id=note.notes_id).first()
+#             if not analysis:
+#                 analysis_result = analyze_document(note)
                 
-                #if note has no analysis create one and save to the database
-                if analysis_result.get("success"):
-                    save_result = save_document_analysis(note,analysis_result)
-                    if not save_result.get("success"):continue
-        return {"success": True}
-    except Exception as e:
-        return {"success": False, "error":str(e)}
+#                 #if note has no analysis create one and save to the database
+#                 if analysis_result.get("success"):
+#                     save_result = save_document_analysis(note,analysis_result)
+#                     if not save_result.get("success"):continue
+#         return {"success": True}
+#     except Exception as e:
+#       return {"success": False, "error":str(e)}
 
 
 
@@ -169,7 +272,7 @@ def get_group_doc_analyses(group_id):
         return {"success": False, "error": "Group ID does not exist"}
 
     try:
-        #generate users 10 most recent uploads to use for reccomendation
+        #generate users 10 most recent uploads to use for recommendation
         group_analyses = db.session.query(DocumentAnalysis
                                          ).join(Notes,DocumentAnalysis.note_id == Notes.notes_id
                                                 ).filter(Notes.group_id== group_id

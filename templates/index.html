@@ -39,8 +39,19 @@
                 My Notes
             </a>
         </div>
-    </div>
+
+        <!-- Dynamic Output Container for Summaries/Recommendations -->
+        <div id="summary-view-area" style="display:none; max-width: 600px; margin: 25px auto 0 auto; padding: 20px; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; text-align: left;">
+            <h3 id="summary-title" style="margin-top: 0;">Summary</h3>
+            <div id="summary-content" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;"></div>
+        </div>
+
+        <!-- Hidden input set to data-pool-id="0" for personal/global scope -->
+        <input type="file" id="file-input" style="display:none"
+               accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+               data-pool-id="0">
 
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+
 </body>
 </html>
