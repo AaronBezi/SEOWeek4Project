@@ -8,16 +8,17 @@ from types import SimpleNamespace
 
 class TestSummarizeText:
     def test_returns_nonempty_string(self):
-        # call generate_summary with a sample list and assert a non-empty string is returned
-        sample_notes = ["Solids have a definite shape and a definite volume."]
-        with patch('api.openAI_api.OpenAI') as mock_openai:  # Updated patch path
-            mock_client = MagicMock()
+        # call generate_summary with a sample note and assert a non-empty string is returned
+        note = MagicMock()
+        note.file_path = "lectures/states.pdf"
+        with patch('api.openAI_api.client') as mock_client, \
+             patch('api.openAI_api.download_file', return_value=(b'bytes', 'pdf')), \
+             patch('api.openAI_api.extract_text', return_value='Solids have a definite shape and a definite volume.'):
             mock_response = MagicMock()
             mock_response.choices = [MagicMock(message=MagicMock(content="Summary of states of matter."))]
             mock_client.chat.completions.create.return_value = mock_response
-            mock_openai.return_value = mock_client
 
-            result = generate_summary(sample_notes)
+            result = generate_summary(note)
             print("\n--- Test 1 Result Output ---")
             print(result)
 
@@ -25,8 +26,8 @@ class TestSummarizeText:
             assert len(result["summary"]) > 0
 
     def test_empty_input_raises_or_returns_empty(self):
-        # call generate_summary with an empty string and assert it raises ValueError or returns ""
-        result = generate_summary([])
+        # call generate_summary with None and assert it raises ValueError or returns error
+        result = generate_summary(None)
         print("\n--- Test 2 Result Output ---")
         print(result)
 
@@ -35,29 +36,36 @@ class TestSummarizeText:
 
     def test_calls_openai_api(self):
         # patch the OpenAI client and assert generate_summary calls it exactly once
-        with patch('api.openAI_api.OpenAI') as mock_openai:  # Updated patch path
-            mock_client = MagicMock()
-            mock_openai.return_value = mock_client
+        note = MagicMock()
+        note.file_path = "lectures/liquids.pdf"
+        with patch('api.openAI_api.client') as mock_client, \
+             patch('api.openAI_api.download_file', return_value=(b'bytes', 'pdf')), \
+             patch('api.openAI_api.extract_text', return_value='Liquids take the shape of their container but have fixed volume.'):
+            mock_response = MagicMock()
+            mock_response.choices = [MagicMock(message=MagicMock(content="Liquid summary."))]
+            mock_client.chat.completions.create.return_value = mock_response
 
-            result = generate_summary(["Liquids take the shape of their container but have fixed volume."])
+            result = generate_summary(note)
             print("\n--- Test 3 Result Output ---")
             print(result)
 
             mock_client.chat.completions.create.assert_called_once()
 
     def test_api_error_raises_runtime_error(self):
-        # patch the OpenAI client to throw an exception and assert generate_summary raises RuntimeError
-        with patch('api.openAI_api.OpenAI') as mock_openai:  # Updated patch path
-            mock_client = MagicMock()
+        # patch the OpenAI client to throw an exception and assert generate_summary handles it
+        note = MagicMock()
+        note.file_path = "lectures/gases.pdf"
+        with patch('api.openAI_api.client') as mock_client, \
+             patch('api.openAI_api.download_file', return_value=(b'bytes', 'pdf')), \
+             patch('api.openAI_api.extract_text', return_value='Gases expand completely to fill any container size.'):
             mock_client.chat.completions.create.side_effect = Exception("API Error")
-            mock_openai.return_value = mock_client
 
-            result = generate_summary(["Gases expand completely to fill any container size."])
+            result = generate_summary(note)
             print("\n--- Test 4 Result Output ---")
             print(result)
 
             assert result["success"] is False
-            assert "Could not generate summary" in result["error"]
+            assert "API Error" in result["error"]
 
 
 
@@ -114,7 +122,7 @@ class TestSummarizationNew:
             temperature = 0.2,
             messages = [
                 {"role": "system",
-                "content": "Summarize the following docuemnt, with no hallucianations and only user information inthe actual document"
+                "content": "Summarize the following docuemnt, with no hallucianations and only user information in the actual document"
                 },
                 
                 {"role": "user", "content": "DUMMY TEXT EXTARCTED TEXT"}
