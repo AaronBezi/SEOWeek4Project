@@ -266,9 +266,9 @@ def summarize():
     group_id = data.get('group_id')
 
     if group_id and str(group_id) != "0":
-        notes = Notes.query.filter_by(group_id=group_id).all()
+        notes = Notes.query.filter_by(group_id=group_id).first()
     else:
-        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).first()
 
     if not notes:
         return jsonify({'success': False, 'error': 'No notes found to summarize'}), 400
