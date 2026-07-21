@@ -7,13 +7,16 @@ from database.models import User, Notes, Notes_Summary, StudyGroup, GroupMembers
 from database.database import db
 from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
 from api.openAI_api import generate_summary, generate_quiz_from_summary
-from api.recommendations.rec_queries import create_user_study_profile, gen_books, retrieve_books
+#from api.recommendations.rec_queries import create_user_study_profile, gen_books, retrieve_books
+from api.recommendations.books_api import recommend
 from pusher import Pusher
 import secrets
 import git
 import os
 import subprocess
 from dotenv import load_dotenv
+from flask_migrate import Migrate
+
 
 load_dotenv()
 
@@ -22,6 +25,7 @@ proxied = FlaskBehindProxy(app)  # handle codio redirection
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+migrate = Migrate(app,db)
 
 # Initialize Pusher for real-time chat spaces
 pusher_client = Pusher(
@@ -34,8 +38,8 @@ pusher_client = Pusher(
 
 db.init_app(app)
 
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
 
 login_manager = LoginManager()  # create the extension object
 login_manager.login_view = 'login'  # indicates route to send to if they hit a page marked @login_required
@@ -267,7 +271,6 @@ def send_message(pool_id):
     return {'success': True}, 200
 
 
-
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
     # query the users notes and summarize them one by one displaying them to the screen
@@ -296,24 +299,28 @@ def summarize():
     return {"success": True, "summary": summaries}, 200
 
 
+
+
 @app.route("/api/recommendations", methods=['POST'])
 def recommendations():
     if not current_user.is_authenticated:
         return {'error': 'User not logged in'}, 401
+    #get user notes
+    note = Notes.query.filter_by(user_id = current_user.user_id).first()
+    rec_results = recommend(note)
+    if not rec_results.get("success"):
+        return {"success": False, "error": rec_results.get("error","Could not build recommendations")}, 400
+    books = [
+        {
+            "title": book.title,
+            "authors": book.authors or [],
+            "description": book.description or "",
+            "preview_link": book.preview_link
+        }
+        for book in rec_results['books']
+    ]
+    return {"success": True, "recommendations": books}, 200
 
-    profile_result = create_user_study_profile(current_user.user_id)
-    if not profile_result.get('success'):
-        return {'success': False, 'error': profile_result.get('error', 'Could not build study profile')}, 400
-
-    queries_result = gen_books(profile_result)
-    if not queries_result.get('success'):
-        return {'success': False, 'error': queries_result.get('error', 'Could not generate search queries')}, 500
-
-    books_result = retrieve_books(queries_result)
-    if not books_result.get('success'):
-        return {'success': False, 'error': books_result.get('error', 'Could not retrieve books')}, 500
-
-    return {'success': True, 'recommendations': books_result['books']}, 200
 
 
 @app.route("/api/generate_quiz", methods=['POST'])
