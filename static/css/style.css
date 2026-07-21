@@ -382,6 +382,14 @@ header {
     background-color: rgba(220, 38, 38, 0.1);
 }
 
+.member-list button.btn-transfer {
+    color: var(--bg-color);
+}
+
+.member-list button.btn-transfer:hover {
+    background-color: rgba(31, 98, 142, 0.1);
+}
+
 .pool-list {
     display: flex;
     flex-direction: column;
