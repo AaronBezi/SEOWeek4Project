@@ -293,10 +293,6 @@ def summarize():
     # notes_text = [note.note_name for note in notes]  # collect note names as text to summarize
 
     # if not result.get('success'):
-    #     return {'error': result.get('error', 'Could not generate summary')}, 500
-
-    # return {'success': True, 'summary': result['summary']}, 200
-
 
 @app.route("/api/recommendations", methods=['POST'])
 def recommendations():
@@ -307,25 +303,18 @@ def recommendations():
     rec_results = recommend(note)
     if not rec_results.get("success"):
         return {"success": False, "error": rec_results.get("error","Could not build recommendations")}, 400
-    return {"success": True, "recommendations": rec_results['books']}, 200
-    # #get document analysis
-    # analysis = get_r_create_analysis(note)
-    # if not analysis.get("success"):
-    #     return {"success": False, 'error': analysis.get("error","Could not get document analysis for this note")}
+    books = [
+        {
+            "title": book.title,
+            "authors": book.authors or [],
+            "description": book.description or "",
+            "preview_link": book.preview_link
+        }
+        for book in rec_results['books']
+    ]
+    return {"success": True, "recommendations": books}, 200
 
-    # profile_result = create_user_study_profile(current_user.user_id)
-    # if not profile_result.get('success'):
-    #     return {'success': False, 'error': profile_result.get('error', 'Could not build study profile')}, 400
 
-    # queries_result = gen_books(profile_result)
-    # if not queries_result.get('success'):
-    #     return {'success': False, 'error': queries_result.get('error', 'Could not generate search queries')}, 500
-
-    # books_result = retrieve_books(queries_result)
-    # if not books_result.get('success'):
-    #     return {'success': False, 'error': books_result.get('error', 'Could not retrieve books')}, 500
-
-    # return {'success': True, 'recommendations': books_result['books']}, 200
 
 
 @app.route("/update_server", methods=['POST'])
