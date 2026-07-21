@@ -201,6 +201,24 @@ def pool_space(pool_id):
     )
 
 
+@app.route("/pool_space/<int:pool_id>/kick/<int:user_id>", methods=['POST'])
+@login_required
+def kick_member(pool_id, user_id):
+    pool = StudyGroup.query.get_or_404(pool_id)
+    user = User.query.get_or_404(user_id)
+
+    if current_user.user_id == pool.created_by and user_id != current_user.user_id:
+        membership = GroupMembership.query.filter_by(group_id=pool_id, user_id=user_id).first()
+        if membership:
+            db.session.delete(membership)
+            db.session.commit()
+            flash(f'"{user.username}" was removed from your group', 'success')
+    else:
+        flash('Failed to remove user', 'error')
+
+    return redirect(url_for('pool_space', pool_id=pool_id))
+
+
 @app.route("/join_pool")
 @login_required
 def join_pool():
@@ -259,7 +277,7 @@ def send_message(pool_id):
 
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
-    #update to summarize the recently uploaded note(faster summaries instead of summarizing every)
+    #update to summarize the recently uploaded note
     if not current_user.is_authenticated:
         return jsonify({'error': 'User not logged in'}), 401
 
@@ -281,7 +299,6 @@ def summarize():
         existing_entries.append({"note_name":existing.note_name, "summary":existing.summary_text})
         return jsonify({"success": True, "summary": existing_entries}), 200
     
-
     summaries = []
     #for note in notes:
     result = generate_summary(notes)

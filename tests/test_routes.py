@@ -137,17 +137,58 @@ class TestSummarizeRoute:
 
 
 class TestPrivatePool:
-    def test_join_with_valid_code_returns_200(self, client):
-        # create a private pool with a join code, POST the code, assert 200 and membership created
-        pass
+    def test_join_with_valid_code_creates_membership(self, client, db):
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        pool = StudyGroup(group_name='Private Pool', created_by=user.user_id,
+                          is_private=True, invite_code='SECRET99')
+        db.session.add(pool)
+        db.session.commit()
 
-    def test_join_with_invalid_code_returns_404(self, client):
-        # POST an incorrect join code and assert a 404 response
-        pass
+        client.post(f'/join_pool/{pool.group_id}/join',
+                    data={'code': 'SECRET99'}, follow_redirects=False)
 
-    def test_join_already_member_returns_200(self, client):
-        # join a pool twice with the same code and assert no duplicate membership is created
-        pass
+        membership = GroupMembership.query.filter_by(
+            group_id=pool.group_id, user_id=user.user_id
+        ).first()
+        assert membership is not None
+
+    def test_join_with_invalid_code_rejected(self, client, db):
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        pool = StudyGroup(group_name='Private Pool', created_by=user.user_id,
+                          is_private=True, invite_code='SECRET99')
+        db.session.add(pool)
+        db.session.commit()
+
+        res = client.post(f'/join_pool/{pool.group_id}/join',
+                          data={'code': 'WRONGCODE'}, follow_redirects=False)
+
+        membership = GroupMembership.query.filter_by(
+            group_id=pool.group_id, user_id=user.user_id
+        ).first()
+        assert membership is None
+        assert res.status_code == 302
+        assert '/join_pool' in res.headers['Location']
+
+    def test_join_already_member_does_not_duplicate(self, client, db):
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        pool = StudyGroup(group_name='Public Pool', created_by=user.user_id, is_private=False)
+        db.session.add(pool)
+        db.session.commit()
+        db.session.add(GroupMembership(group_id=pool.group_id, user_id=user.user_id))
+        db.session.commit()
+
+        client.post(f'/join_pool/{pool.group_id}/join', data={})
+
+        memberships = GroupMembership.query.filter_by(
+            group_id=pool.group_id, user_id=user.user_id
+        ).all()
+        assert len(memberships) == 1
 
 
 class TestChat:
@@ -204,7 +245,7 @@ class TestQuiz:
         register_user(client)
         login_user_via_form(client)
         response = client.post('/api/generate_quiz', json={})
-        assert response.status_code == 200
+        assert response.status_code == 400
         data = response.get_json()
         assert data['success'] is False
         assert 'No notes found' in data['error']
@@ -225,3 +266,42 @@ class TestQuiz:
         assert data['success'] is True
         assert isinstance(data['quiz'], list)
         assert data['quiz'][0]['question'] == 'What is X?'
+
+
+class TestRecommendations:
+    def test_recommendations_unauthenticated_returns_401(self, client):
+        response = client.post('/api/recommendations', json={})
+        assert response.status_code == 401
+
+    def test_recommendations_no_notes_returns_400(self, client):
+        register_user(client)
+        login_user_via_form(client)
+        response = client.post('/api/recommendations', json={})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert data['success'] is False
+        assert 'error' in data
+
+    def test_recommendations_returns_books(self, client, db, monkeypatch):
+        mock_books = [{'title': 'Biology 101', 'authors': ['Dr. Smith'], 'description': 'A textbook.'}]
+        monkeypatch.setattr('app.search_books', lambda query: {'success': True, 'books': mock_books})
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        Notes.create_Note(user.user_id, 'biology.pdf', '/files/biology.pdf')
+        response = client.post('/api/recommendations', json={})
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data['success'] is True
+        assert data['recommendations'] == mock_books
+
+    def test_recommendations_books_api_failure_returns_400(self, client, db, monkeypatch):
+        monkeypatch.setattr('app.search_books', lambda query: {'success': False, 'error': 'API unavailable'})
+        register_user(client)
+        login_user_via_form(client)
+        user = db.session.query(User).filter_by(email='test@example.com').first()
+        Notes.create_Note(user.user_id, 'biology.pdf', '/files/biology.pdf')
+        response = client.post('/api/recommendations', json={})
+        assert response.status_code == 400
+        data = response.get_json()
+        assert data['success'] is False

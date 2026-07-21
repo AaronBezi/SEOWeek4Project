@@ -20,7 +20,7 @@ body {
     flex-direction: column;
 }
 
-/* view switcher styling */
+/* VIEW SWITCHER STYLING */
 .view {
     display: none;
 }
@@ -30,13 +30,25 @@ body {
     flex: 1;
 }
 
-/* view */
+/* --- LANDING VIEW LAYOUT --- */
 #landing-view {
-    align-items: center;
-    justify-content: center;
-    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0; /* Allows 100vh calculation */
     text-align: center;
+}
+
+/* Hero Section (Fills entire screen initial view) */
+.hero-section {
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 32px;
+    position: relative;
 }
 
 .brand-title {
@@ -55,34 +67,60 @@ body {
     max-width: 500px;
 }
 
+/* Subtle visual cue suggesting to scroll down */
+.scroll-indicator {
+    position: absolute;
+    bottom: 30px;
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.6;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-8px); }
+    60% { transform: translateY(-4px); }
+}
+
+/* Section containing all buttons below the fold */
+.actions-section {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 64px 32px;
+}
+
 .button-container {
     display: flex;
     flex-direction: column;
-    gap: 40px;
-    width: 275px;
-    max-width: 450px;
+    align-items: center;
+    gap: 32px;
+    width: 100%;
+    max-width: 900px; /* Expanded to allow side-by-side buttons */
 }
 
+/* GET STARTED CAPSULE BUTTON */
 .capsule-btn {
     background-color: #e5e7eb;
     color: var(--text-dark);
     padding: 19.2px 40px;
     border-radius: 50px;
-    font-size: 24px;
-    font-weight: bold;
+    font-family: 'Geist Pixel', sans-serif; /* Pixel Font */
+    font-size: 22px;
     text-transform: uppercase;
     border: none;
     cursor: pointer;
     position: relative;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     transition: transform 0.2s, box-shadow 0.2s;
-    letter-spacing: 1px;
-}
-
-a.capsule-btn {
+    letter-spacing: 1.5px;
+    text-decoration: none;
     display: inline-block;
     text-align: center;
-    text-decoration: none;
 }
 
 .capsule-btn:hover {
@@ -90,7 +128,60 @@ a.capsule-btn {
     box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 
-/* workspace */
+/* HORIZONTAL POOL BUTTON ROW */
+.pool-btn-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    flex-wrap: wrap; /* Keeps it responsive on mobile */
+}
+
+/* SQUARE POOL BUTTONS */
+.pool-btn {
+    background-color: #e5e7eb;
+    color: var(--text-dark);
+
+    width: 225px;
+    height: 175px;
+    padding: 12px;
+
+    border-radius: 12px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    /* Pixel typography settings */
+    font-family: 'Geist Pixel', sans-serif;
+    font-size: 25px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+    text-decoration: none;
+    flex: 0 0 auto;
+}
+
+a.pool-btn {
+    display: inline-flex;
+    text-align: center;
+    text-decoration: none;
+}
+
+.pool-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    background-color: #d1d5db;
+}
+
+/* WORKSPACE HEADER */
 header {
     background-color: rgba(0, 0, 0, 0.2);
     padding: 16px 32px;
@@ -176,7 +267,7 @@ header {
     display: block;
 }
 
-/* "White Board"- where people upload notes */
+/* WORKSPACE CONTAINER & ACTION STACK */
 .workspace-container {
     display: flex;
     flex-direction: column;
@@ -187,7 +278,6 @@ header {
     position: relative;
 }
 
-/* organizes task buttons */
 .action-stack {
     position: absolute;
     bottom: 40px;
@@ -239,7 +329,6 @@ header {
     font-size: 15.2px;
 }
 
-/* continuous roll expansion effects */
 .action-stack:hover .task-btn {
     background-color: #1a202c;
     width: 180px;
@@ -258,7 +347,7 @@ header {
     transition-delay: 0.1s;
 }
 
-/* "WHITE BOARD - area where people upload their notes" */
+/* WHITE BOARD SECTION */
 .notes-section {
     background: #ffffff;
     color: var(--text-dark);
@@ -360,6 +449,28 @@ header {
     justify-content: space-between;
 }
 
+.member-list form {
+    margin: 0;
+}
+
+.member-list button {
+    background: none;
+    border: none;
+    color: #dc2626;
+    font-size: 12.8px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.member-list button:hover {
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
 .pool-list {
     display: flex;
     flex-direction: column;
@@ -382,7 +493,7 @@ header {
 }
 
 .pool-list-name {
-    font-weight: bold;
+    font-weight: bolder;
     font-size: 17.6px;
 }
 
@@ -396,7 +507,7 @@ header {
     font-size: 14.4px;
 }
 
-/* REGISTER/AUTH PAGE */
+/* AUTH PAGE */
 .auth-card {
     width: 100%;
     max-width: 420px;
@@ -499,4 +610,3 @@ footer {
     border-top: 1px solid rgba(255,255,255,0.05);
     letter-spacing: 0.5px;
 }
-
