@@ -14,44 +14,59 @@
 <body>
 
     <div id="landing-view" class="view active">
-        <h1 class="brand-title">Study Pool</h1>
-        <p class="brand-tagline">Share your study space, upload documents, and get quick summaries.</p>
 
+        <!-- SECTION 1: Full-screen Hero Header (Title & Tagline Only) -->
+        <div class="hero-section">
+            <h1 class="brand-title">Study Pool</h1>
+            <p class="brand-tagline">Share your study space.</p>
+
+            <!-- Optional scroll indicator indicator -->
+            <div class="scroll-indicator">↓ Scroll Down</div>
+        </div>
+
+        <!-- Flash messages placed right before controls -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
                     <div class="flash-message flash-{{ category }}">{{ message }}</div>
                 {% endfor %}
             {% endif %}
-        {% endwith %}        
+        {% endwith %}
 
-        <div class="button-container">
-            <a class="capsule-btn" href="{{ url_for('login') }}">
-                Sign In
-            </a>
-            <a class="capsule-btn" href="{{ url_for('create_pool') }}">
-                Create Pool
-            </a>
-            <a class="capsule-btn" href="{{ url_for('join_pool') }}">
-                Join Pool
-            </a>
-            <a class="capsule-btn" href="{{ url_for('my_notes') }}">
-                My Notes
-            </a>
-        </div>
+        <!-- SECTION 2: Below-the-fold Action Buttons Section -->
+        <div class="actions-section">
+            <h1 class="brand-title">Jump In!</h1>
+            <div class="button-container">
+                <a class="capsule-btn" href="{{ url_for('login') }}">
+                    Sign In
+                </a>
 
-        <!-- Dynamic Output Container for Summaries/Recommendations -->
-        <div id="summary-view-area" style="display:none; max-width: 600px; margin: 25px auto 0 auto; padding: 20px; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; text-align: left;">
-            <h3 id="summary-title" style="margin-top: 0;">Summary</h3>
-            <div id="summary-content" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;"></div>
+                <div class="pool-btn-row">
+                    <a class="pool-btn" href="{{ url_for('create_pool') }}">
+                        Create Pool
+                    </a>
+                    <a class="pool-btn" href="{{ url_for('join_pool') }}">
+                        Join Pool
+                    </a>
+                    <a class="pool-btn" href="{{ url_for('my_notes') }}">
+                        My Notes
+                    </a>
+                </div>
+            </div>
+
+            <!-- Dynamic Output Container for Summaries/Recommendations -->
+            <div id="summary-view-area" style="display:none; max-width: 600px; margin: 25px auto 0 auto; padding: 20px; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; text-align: left;">
+                <h3 id="summary-title" style="margin-top: 0;">Summary</h3>
+                <div id="summary-content" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;"></div>
+            </div>
         </div>
 
         <!-- Hidden input set to data-pool-id="0" for personal/global scope -->
         <input type="file" id="file-input" style="display:none"
                accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
                data-pool-id="0">
+    </div>
 
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-
 </body>
 </html>
