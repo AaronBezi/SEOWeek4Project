@@ -166,6 +166,26 @@ def create_pool():
         return redirect(url_for('pool_space', pool_id=pool.group_id))
     return render_template('create_pool.html', title='Create Pool', form=form)
 
+@app.route("/delete_pool/<int:pool_id>/delete", methods=['POST'])
+@login_required
+def delete_pool(pool_id):
+    pool = StudyGroup.query.get_or_404(pool_id)
+    if pool.created_by != current_user.user_id:
+        flash('Only the pool owner can delete this pool.', 'error')
+        return redirect(url_for('pool_space', pool_id=pool_id))
+    
+    Message.query.filter_by(group_id=pool_id).delete()
+    GroupMembership.query.filter_by(group_id=pool_id).delete()
+    notes = Notes.query.filter_by(group_id=pool_id).all()
+    for note in notes:
+        delete_note_file(note.file_path)
+        db.session.delete(note)
+
+    db.session.delete(pool)
+    db.session.commit()
+    flash(f'Pool "{pool.group_name}" deleted.', 'success')
+    return redirect(url_for('join_pool'))
+    
 
 @app.route("/pool_space/<int:pool_id>")
 @login_required
@@ -250,6 +270,48 @@ def join_pool_action(pool_id):
     return redirect(url_for('pool_space', pool_id=pool_id))
 
 
+@app.route("/leave_pool/<int:pool_id>/leave", methods=["POST"])
+@login_required
+def leave_pool(pool_id):
+    pool = StudyGroup.query.get_or_404(pool_id)
+
+    existing = GroupMembership.query.filter_by(group_id=pool_id, user_id=current_user.user_id).first()
+    if existing and current_user.user_id != pool.created_by:
+        db.session.delete(existing)
+        db.session.commit()
+        flash(f'Left "{pool.group_name}"!', 'success')
+    else:
+        flash("Transfer ownership or delete the pool instead.", 'error')
+        return redirect(url_for('pool_space', pool_id=pool_id))
+
+    return redirect(url_for('join_pool'))
+
+
+@app.route("/pool_space/<int:pool_id>/transfer/<int:user_id>", methods=['POST'])
+@login_required
+def transfer_ownership(pool_id, user_id):
+    pool = StudyGroup.query.get_or_404(pool_id)
+
+    if current_user.user_id != pool.created_by:
+        flash('Only the pool owner can transfer ownership.', 'error')
+        return redirect(url_for('pool_space', pool_id=pool_id))
+
+    if user_id == current_user.user_id:
+        flash('You are already the owner.', 'error')
+        return redirect(url_for('pool_space', pool_id=pool_id))
+
+    new_owner_membership = GroupMembership.query.filter_by(group_id=pool_id, user_id=user_id).first()
+    if not new_owner_membership:
+        flash('That user is not a member of this pool.', 'error')
+        return redirect(url_for('pool_space', pool_id=pool_id))
+
+    new_owner = User.query.get_or_404(user_id)
+    pool.created_by = user_id
+    db.session.commit()
+    flash(f'Ownership transferred to "{new_owner.username}".', 'success')
+    return redirect(url_for('pool_space', pool_id=pool_id))
+
+
 @app.route("/pool_space/<int:pool_id>/message", methods=['POST'])
 @login_required
 def send_message(pool_id):
@@ -277,6 +339,7 @@ def send_message(pool_id):
 
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
+    #update to summarize the recently uploaded note
     if not current_user.is_authenticated:
         return jsonify({'error': 'User not logged in'}), 401
 
@@ -284,19 +347,29 @@ def summarize():
     group_id = data.get('group_id')
 
     if group_id and str(group_id) != "0":
-        notes = Notes.query.filter_by(group_id=group_id).all()
+        notes = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
     else:
-        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
 
     if not notes:
         return jsonify({'success': False, 'error': 'No notes found to summarize'}), 400
-
+    
+    #checks for any existing entries already adds them to an array and returns instead of generating another api call
+    existing_entries = []
+    existing = Notes_Summary.query.filter_by(from_notes_id=notes.notes_id).first()
+    if existing:
+        existing_entries.append({"note_name":existing.note_name, "summary":existing.summary_text})
+        return jsonify({"success": True, "summary": existing_entries}), 200
+    
     summaries = []
-    for note in notes:
-        result = generate_summary(note)
-        if not result.get('success'):
-            return jsonify({"success": False, 'error': result.get('error', 'Could not generate summary')}), 500
-        summaries.append({"note_name": note.note_name, "summary": result['summary']})
+    #for note in notes:
+    result = generate_summary(notes)
+    if not result.get('success'):
+        return jsonify({"success": False, 'error': result.get('error', 'Could not generate summary')}), 500
+    summaries.append({"note_name": notes.note_name, "summary": result['summary']})
+    summary_note = Notes_Summary(from_notes_id=notes.notes_id,from_user_id=current_user.user_id,note_name=notes.note_name,summary_text=result['summary'],group_id=notes.group_id)
+    db.session.add(summary_note)
+    db.session.commit()
 
     return jsonify({"success": True, "summary": summaries}), 200
 
