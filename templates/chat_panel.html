@@ -28,6 +28,10 @@
 </aside>
 
 <script>
+    // Define global constants from Jinja so Pusher script never fails
+    const POOL_ID = parseInt("{{ pool.group_id if (pool and pool.group_id is defined) else 0 }}") || 0;
+    const CURRENT_USERNAME = "{{ current_user.username if current_user and current_user.is_authenticated else '' }}";
+
     document.addEventListener("DOMContentLoaded", () => {
         const chatPanel = document.getElementById('chat-panel');
         const chatHeader = document.getElementById('chat-header');
@@ -40,52 +44,79 @@
         if (chatStreamBox) chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
 
         // --- Layout Toggles ---
-        chatHeader.addEventListener('click', (e) => {
+        if (chatHeader) {
+            chatHeader.addEventListener('click', (e) => {
+                if (e.target === expandBtn || e.target === collapseBtn) return;
+                chatPanel.classList.remove('is-expanded');
+                chatPanel.classList.toggle('is-collapsed');
+                if (collapseBtn) collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
+            });
+        }
 
-            if (e.target === expandBtn || e.target === collapseBtn) return;
+        if (collapseBtn) {
+            collapseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                chatPanel.classList.remove('is-expanded');
+                chatPanel.classList.toggle('is-collapsed');
+                collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
+            });
+        }
 
-            chatPanel.classList.remove('is-expanded');
-            chatPanel.classList.toggle('is-collapsed');
-            collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
-        });
-
-        collapseBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            chatPanel.classList.remove('is-expanded');
-            chatPanel.classList.toggle('is-collapsed');
-            collapseBtn.textContent = chatPanel.classList.contains('is-collapsed') ? '＋' : '−';
-        });
-
-        expandBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            chatPanel.classList.remove('is-collapsed');
-            collapseBtn.textContent = '−';
-            chatPanel.classList.toggle('is-expanded');
-            expandBtn.textContent = chatPanel.classList.contains('is-expanded') ? '⤡' : '⤢';
-            setTimeout(() => { if (chatStreamBox) chatStreamBox.scrollTop = chatStreamBox.scrollHeight; }, 150);
-        });
+        if (expandBtn) {
+            expandBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                chatPanel.classList.remove('is-collapsed');
+                if (collapseBtn) collapseBtn.textContent = '−';
+                chatPanel.classList.toggle('is-expanded');
+                expandBtn.textContent = chatPanel.classList.contains('is-expanded') ? '⤡' : '⤢';
+                setTimeout(() => { if (chatStreamBox) chatStreamBox.scrollTop = chatStreamBox.scrollHeight; }, 150);
+            });
+        }
 
         // --- AJAX Send Handling ---
         if (chatForm) {
             chatForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const input = document.getElementById('message-input-field');
+                const messageText = input.value.trim();
+                if (!messageText) return;
+
                 const formData = new FormData(chatForm);
 
-                await fetch(chatForm.action, { method: 'POST', body: formData });
-                input.value = '';
+                try {
+                    const response = await fetch(chatForm.action, { method: 'POST', body: formData });
+                    if (response.ok) {
+                        input.value = ''; // Clear input only after successful send
+                    }
+                } catch (err) {
+                    console.error("Error sending message:", err);
+                }
             });
         }
 
         // --- Pusher Live Updates ---
-        const pusher = new Pusher("{{ pusher_key }}", { cluster: "{{ pusher_cluster }}" });
-        const channel = pusher.subscribe('pool-' + POOL_ID);
-        channel.bind('new-message', function(data) {
-            const div = document.createElement('div');
-            div.className = `chat-container ${data.username === CURRENT_USERNAME ? 'outgoing' : 'incoming'}`;
-            div.innerHTML = `<span class="chat-sender">${data.username}</span><p>${data.text}</p><span class="chat-time">${data.time_sent}</span>`;
-            chatStreamBox.appendChild(div);
-            chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
-        });
+        if (POOL_ID > 0) {
+            const pusher = new Pusher("{{ pusher_key }}", {
+                cluster: "{{ pusher_cluster }}",
+                encrypted: true
+            });
+
+            const channel = pusher.subscribe('pool-' + POOL_ID);
+
+            channel.bind('new-message', function(data) {
+                if (!chatStreamBox) return;
+
+                const div = document.createElement('div');
+                div.className = `chat-container ${data.username === CURRENT_USERNAME ? 'outgoing' : 'incoming'}`;
+                div.innerHTML = `
+                    <span class="chat-sender">${data.username}</span>
+                    <p>${data.text}</p>
+                    <span class="chat-time">${data.time_sent}</span>
+                `;
+
+                chatStreamBox.appendChild(div);
+                chatStreamBox.scrollTop = chatStreamBox.scrollHeight;
+            });
+        }
     });
 </script>
