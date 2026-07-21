@@ -102,7 +102,7 @@ if (summarizeBtn) {
         summarizeBtn.style.opacity = '1';
         summarizeBtn.style.cursor = 'pointer';
 
-    summarizeBtn.innerHTML = `${fallbackIcon} <span class="btn-text">Summarize Notes</span>`;
+    summarizeBtn.innerHTML = '<span class="btn-icon">☰</span> <span class="btn-text">Summarize Notes</span>';
     }
 }
 /*

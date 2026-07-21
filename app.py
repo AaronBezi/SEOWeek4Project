@@ -305,8 +305,9 @@ def summarize():
 def recommendations():
     if not current_user.is_authenticated:
         return {'error': 'User not logged in'}, 401
-    #get user notes
-    note = Notes.query.filter_by(user_id = current_user.user_id).first()
+    note = Notes.query.filter_by(user_id=current_user.user_id).first()
+    if not note:
+        return {"success": False, "error": "No notes found. Upload a document to get recommendations."}, 400
     rec_results = recommend(note)
     if not rec_results.get("success"):
         return {"success": False, "error": rec_results.get("error","Could not build recommendations")}, 400
@@ -378,6 +379,11 @@ def pool_quiz(pool_id):
 
     pool = StudyGroup.query.get_or_404(pool_id)
     return render_template('quiz.html', pool=pool)
+
+@app.route("/recommendations")
+@login_required
+def recommendations_page():
+    return render_template('recommendations.html')
 
 @app.route("/update_server", methods=['POST'])
 def webhook():
