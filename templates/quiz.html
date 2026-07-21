@@ -63,7 +63,7 @@
 
                 <div class="question-container">
                     <p id="category" class="category-text">Practice Quiz</p>
-                    <h2 id="question">Generating Quiz...</h2>
+                    <h2 id="question">Generating Quiz</h2>
                 </div>
 
                 <div class="answers-container" id="answers" style="display: none;">
@@ -132,6 +132,7 @@
         let scoreVal = 0;
         let timerInterval;
         let totalSecondsSpent = 0;
+        let loadingInterval = null;
 
         document.addEventListener('DOMContentLoaded', function () {
             const startBtn = document.getElementById('start');
@@ -142,7 +143,26 @@
             const timerTracker = document.getElementById('time');
             const progressMeter = document.getElementById('progress');
 
+            function startDotAnimation(targetElement, baseText) {
+                let count = 0;
+                targetElement.textContent = baseText;
+                return setInterval(() => {
+                    count = (count + 1) % 4;
+                    const dots = '.'.repeat(count);
+                    targetElement.textContent = `${baseText}${dots}`;
+                }, 400);
+            }
+
+            function stopDotAnimation() {
+                if (loadingInterval) {
+                    clearInterval(loadingInterval);
+                    loadingInterval = null;
+                }
+            }
+
             function initQuizSpace() {
+                loadingInterval = startDotAnimation(questionEl, 'Generating Quiz');
+
                 fetch('/api/generate_quiz', {
                     method: 'POST',
                     headers: {
@@ -152,6 +172,8 @@
                 })
                 .then(res => res.json())
                 .then(data => {
+                    stopDotAnimation();
+
                     if (data.success && data.quiz && data.quiz.length > 0) {
                         questionsList = data.quiz;
                         categoryEl.style.display = "none";
@@ -165,6 +187,7 @@
                     }
                 })
                 .catch(() => {
+                    stopDotAnimation();
                     categoryEl.style.display = "none";
                     startBtn.style.display = "none";
                     questionEl.textContent = "Failed to load quiz workspace. Please try again.";

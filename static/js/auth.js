@@ -8,6 +8,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const summaryViewArea = document.getElementById('summary-view-area');
     const summaryTitle = document.getElementById('summary-title');
 
+    // --- ANIMATED ELLIPSIS LOADER ---
+    function startDotAnimation(buttonElement, baseIconHtml, baseText) {
+        let count = 0;
+        buttonElement.disabled = true;
+
+        const intervalId = setInterval(() => {
+            count = (count + 1) % 4; // Cycles through 0, 1, 2, 3
+            const dots = '.'.repeat(count);
+            buttonElement.innerHTML = `${baseIconHtml} <span class="btn-text">${baseText}${dots}</span>`;
+        }, 400);
+
+        return intervalId;
+    }
+
     // --- FILE UPLOAD ---
     if (uploadBtn && fileInput) {
         uploadBtn.addEventListener('click', function () {
@@ -52,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- SUMMARIZE ---
     if (summarizeBtn) {
         let isProcessing = false;
+        let loadingInterval = null;
         const fallbackIcon = summarizeBtn.querySelector('.btn-icon')
             ? summarizeBtn.querySelector('.btn-icon').outerHTML
             : '<span class="btn-icon">&#9776;</span>';
@@ -61,10 +76,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (isProcessing || summarizeBtn.disabled) return;
 
-            // Lock button state during processing
+            // Start processing & dot animation
             isProcessing = true;
-            summarizeBtn.disabled = true;
-            summarizeBtn.innerHTML = '<span class="btn-icon">&#9776;</span> <span class="btn-text">Summarizing...</span>';
+            loadingInterval = startDotAnimation(summarizeBtn, fallbackIcon, 'Summarizing');
 
             const poolId = fileInput ? fileInput.dataset.poolId : null;
             const parsedPoolId = poolId && poolId !== '0' ? parseInt(poolId, 10) : null;
@@ -106,6 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         function resetSummarizeButtonState() {
+            if (loadingInterval) clearInterval(loadingInterval);
             isProcessing = false;
             summarizeBtn.disabled = false;
             summarizeBtn.style.opacity = '1';
@@ -117,6 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- RECOMMENDATIONS / SOURCE SEARCH ---
     if (recBtn) {
         let isRecProcessing = false;
+        let recLoadingInterval = null;
         const recIcon = recBtn.querySelector('.btn-icon')
             ? recBtn.querySelector('.btn-icon').outerHTML
             : '<span class="btn-icon">&#128366;&#65038;</span>';
@@ -125,9 +141,9 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             if (isRecProcessing || recBtn.disabled) return;
 
+            // Start processing & dot animation
             isRecProcessing = true;
-            recBtn.disabled = true;
-            recBtn.innerHTML = `${recIcon} <span class="btn-text">Finding Books...</span>`;
+            recLoadingInterval = startDotAnimation(recBtn, recIcon, 'Finding Books');
 
             const poolId = fileInput ? fileInput.dataset.poolId : null;
             const parsedPoolId = poolId && poolId !== '0' ? parseInt(poolId, 10) : null;
@@ -139,12 +155,10 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .then(res => res.json())
             .then(data => {
-                isRecProcessing = false;
-                recBtn.disabled = false;
-                recBtn.innerHTML = `${recIcon} <span class="btn-text">Source Search</span>`;
+                resetRecButtonState();
 
                 if (data.success && data.recommendations) {
-                    // Save data and redirect to the dedicated recommendations page
+                    // Save data and redirect to recommendations page
                     localStorage.setItem('recommendations_data', JSON.stringify(data.recommendations));
                     window.location.href = '/recommendations';
                 } else {
@@ -152,12 +166,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(() => {
-                isRecProcessing = false;
-                recBtn.disabled = false;
-                recBtn.innerHTML = `${recIcon} <span class="btn-text">Source Search</span>`;
+                resetRecButtonState();
                 alert("Recommendations request failed. Please try again.");
             });
         });
+
+        function resetRecButtonState() {
+            if (recLoadingInterval) clearInterval(recLoadingInterval);
+            isRecProcessing = false;
+            recBtn.disabled = false;
+            recBtn.innerHTML = `${recIcon} <span class="btn-text">Source Search</span>`;
+        }
     }
 });
 
