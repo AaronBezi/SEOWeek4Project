@@ -360,6 +360,28 @@ header {
     justify-content: space-between;
 }
 
+.member-list form {
+    margin: 0;
+}
+
+.member-list button {
+    background: none;
+    border: none;
+    color: #dc2626;
+    font-size: 12.8px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.member-list button:hover {
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
 .pool-list {
     display: flex;
     flex-direction: column;
