@@ -7,23 +7,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const summaryContent = document.getElementById('summary-content');
     const summaryViewArea = document.getElementById('summary-view-area');
     const summaryTitle = document.getElementById('summary-title');
-    const bookFeed = document.getElementById('book-feed');
-
-    if (bookFeed) {
-        fetch('/api/recommendations', { method: 'POST' })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    allRecommendations = data.recommendations;
-                    renderBooks(allRecommendations);
-                } else {
-                    bookFeed.innerHTML = `<p class="placeholder-text" style="color: #dc2626;">Error: ${data.error || 'Could not load recommendations.'}</p>`;
-                }
-            })
-            .catch(() => {
-                bookFeed.innerHTML = '<p class="placeholder-text">Could not load recommendations. Please try again.</p>';
-            });
-    }
 
     // --- FILE UPLOAD ---
     if (uploadBtn && fileInput) {
@@ -154,31 +137,12 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 isRecProcessing = false;
                 recBtn.disabled = false;
-                recBtn.innerHTML = `${recIcon} <span class="btn-text">Get Recommendations</span>`;
+                recBtn.innerHTML = `${recIcon} <span class="btn-text">Source Search</span>`;
 
                 if (data.success && data.recommendations) {
-                    allRecommendations = data.recommendations;
-
-                    if (bookFeed) {
-                        renderBooks(allRecommendations);
-                    } else if (summaryContent) {
-                        if (summaryTitle) summaryTitle.textContent = "Recommended Resources";
-                        if (summaryViewArea) summaryViewArea.style.display = 'block';
-                        summaryContent.style.display = 'block';
-
-                        if (typeof data.recommendations === 'string') {
-                            summaryContent.textContent = data.recommendations;
-                        } else if (Array.isArray(data.recommendations)) {
-                            summaryContent.innerHTML = data.recommendations.map(book => `
-                                <div style="margin-bottom: 15px;">
-                                    <strong>${book.title}</strong>
-                                    <p style="margin: 4px 0; font-size: 0.85rem; opacity: 0.8;">${book.authors ? book.authors.join(', ') : 'Unknown Author'}</p>
-                                    <p style="margin: 4px 0;">${book.description || 'No description available.'}</p>
-                                    ${book.preview_link ? `<a href="${book.preview_link}" target="_blank" style="color: #3b82f6;">Preview</a>` : ''}
-                                </div>
-                            `).join('<hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">');
-                        }
-                    }
+                    // Save data and redirect to the new recommendations webpage
+                    localStorage.setItem('recommendations_data', JSON.stringify(data.recommendations));
+                    window.location.href = '/recommendations';
                 } else {
                     alert(data.error || "Could not load recommendations.");
                 }
@@ -209,40 +173,3 @@ window.addEventListener('click', function(event) {
         }
     }
 });
-
-let allRecommendations = [];
-
-function renderBooks(books) {
-    const bookFeed = document.getElementById('book-feed');
-    if (!bookFeed) return;
-    if (!books || books.length === 0) {
-        bookFeed.innerHTML = '<p class="placeholder-text">No recommendations found.</p>';
-        return;
-    }
-    bookFeed.innerHTML = books.map(book => `
-        <div class="book-card">
-            <strong>${book.title}</strong>
-            <p class="book-authors">${book.authors ? book.authors.join(', ') : ''}</p>
-            <p>${book.description || 'No description available.'}</p>
-            ${book.preview_link ? `<a href="${book.preview_link}" target="_blank" class="preview-link">Preview</a>` : ''}
-        </div>
-    `).join('');
-}
-
-function runLiveSearch() {
-    const query = document.getElementById('search-input').value.toLowerCase();
-    const filtered = allRecommendations.filter(book =>
-        book.title.toLowerCase().includes(query) ||
-        (book.description && book.description.toLowerCase().includes(query)) ||
-        (book.authors && book.authors.some(a => a.toLowerCase().includes(query)))
-    );
-    renderBooks(filtered);
-}
-
-function toggleLayoutMode() {
-    const bookFeed = document.getElementById('book-feed');
-    if (bookFeed) {
-        bookFeed.classList.toggle('book-list');
-        bookFeed.classList.toggle('book-grid');
-    }
-}
