@@ -11,20 +11,14 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
-    <!-- Pusher Client library required for chat feature -->
     <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
 </head>
 <body>
 
-<!-- Taskbar  -->
 <header style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; box-sizing: border-box; width: 100%;">
-
-    <!-- Logo on the left -->
     <div class="logo" onclick="window.location.href='{{ url_for('home') }}'" style="cursor: pointer; font-family: 'Geist Pixel', sans-serif; white-space: nowrap; flex-shrink: 0;">STUDY POOL</div>
 
-    <!-- Title, Invite Code, and Dropdown Menu Button to the right -->
     <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
-
         <div class="pool-title" style="font-weight: bold; font-size: 1.1rem; white-space: nowrap;">{{ pool.group_name }}</div>
 
         {% if pool.created_by == current_user.user_id and pool.is_private %}
@@ -33,7 +27,6 @@
         </div>
         {% endif %}
 
-        <!-- Dropdown Menu Trigger Container -->
         <div class="menu-dropdown" style="position: relative; z-index: 1000; margin-left: 5px;">
             <button class="menu-trigger" onclick="event.stopPropagation(); toggleDropdown();" aria-label="Open Menu" style="background: none; border: none; cursor: pointer; padding: 8px;">
                 <span class="three-dots"></span>
@@ -49,158 +42,53 @@
                 {% endfor %}
             </div>
         </div>
-
     </div>
 </header>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
 
-        <div class="workspace-container">
+ <div class="workspace-container">
             <main class="notes-section">
-                <h2>Shared Notes</h2>
+                <h2>Your Notes</h2>
                 <div class="notes-grid" id="notes-content">
                     {% for note in notes %}
                     {% if note.file_path %}
                     <div class="note-card">
                         <a href="{{ note_urls[note.notes_id] }}" target="_blank">{{ note.note_name }}</a>
-                        {# Allows both the note owner AND the pool creator to delete documents seamlessly #}
-                        {% if note.user_id == current_user.user_id or pool.created_by == current_user.user_id %}
-                            <form method="POST" action="{{ url_for('delete_note', note_id=note.notes_id) }}" style="display: inline; margin-left: 10px;">
-                                <button type="submit" style="background-color: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Delete</button>
+                        {% if note.user_id == current_user.user_id %}
+                            <form method="POST" action="{{ url_for('delete_note', note_id=note.notes_id) }}">
+                                <button type="submit">Delete</button>
                             </form>
                         {% endif %}
                     </div>
                     {% endif %}
                     {% else %}
-                        <p class="placeholder-text">No notes shared here yet. Be the first to upload one!</p>
+                        <p class="placeholder-text">No personal notes yet. Upload one to get started!</p>
                     {% endfor %}
                 </div>
-
-                <!-- Modern display placeholder box for the summaries -->
-                <div id="summary-view-area" style="display:none; margin-top: 25px; padding: 20px; background-color: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0,0,0,0.1); border-radius: 8px;">
-                    <h3 style="margin-top: 0;"> Pool Space Summary</h3>
-                    <h3> </h3>
-                    <div id="summary-content" style="white-space: pre-wrap; font-size: 0.95rem; line-height: 1.5;"></div>
-                </div>
-
-                <h2>Members</h2>
-                <ul class="member-list">
-                    {% for member in members %}
-                        <li>{{ member.username }}</li>
-                    {% endfor %}
-                </ul>
+                <div id="summary-content" style="display:none;"></div>
             </main>
 
-            <input type="file" id="file-input" style="display:none"
-                   accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
-                   data-pool-id="{{ pool.group_id }}">
+    <input type="file" id="file-input" style="display:none"
+           accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+           data-pool-id="{{ pool.group_id if pool and pool.group_id is defined else 0 }}">
 
-            <div class="action-stack">
-                <button class="task-btn" id="upload-btn">
-                    <span class="btn-icon">+</span>
-                    <span class="btn-text">Upload Doc</span>
-                </button>
+    <!-- Reusable Action Stack -->
+    {% include 'action_stack.html' %}
+</div>
 
-                <button class="task-btn summary-btn" id="summarize-btn">
-                    <span class="btn-icon">☰</span>
-                    <span class="btn-text">Summarize Notes</span>
-                </button>
+<a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
 
-                <a href="{{ url_for('pool_quiz', pool_id=pool.group_id) }}" class="task-btn quiz-toggle-btn" style="text-decoration: none;">
-                    <span class="btn-icon">&#9998;</span>
-                    <span class="btn-text">Create a Quiz</span>
-                </a>
-            </div>
-        </div>
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<script src="{{ url_for('static', filename='js/action_stack.js') }}"></script>
 
-        <a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
-
-    <script>
-        const POOL_ID = "{{ pool.group_id }}";
-        const CURRENT_USERNAME = "{{ current_user.username }}";
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const summarizeBtn = document.getElementById('summarize-btn');
-            const summaryViewArea = document.getElementById('summary-view-area');
-            const summaryContent = document.getElementById('summary-content');
-
-            if (summarizeBtn) {
-                let isProcessing = false;
-
-                const newBtn = summarizeBtn.cloneNode(true);
-                summarizeBtn.parentNode.replaceChild(newBtn, summarizeBtn);
-
-                newBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (isProcessing) return;
-
-                    isProcessing = true;
-                    newBtn.disabled = true;
-
-                    const btnText = newBtn.querySelector('.btn-text');
-                    if (btnText) {
-                        btnText.textContent = "Summarizing...";
-                    }
-
-                    fetch('/api/summarize', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ group_id: parseInt(POOL_ID) })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        isProcessing = false;
-                        newBtn.disabled = false;
-
-                        if (btnText) {
-                            btnText.textContent = "Summarize Notes";
-                        }
-
-                        if (data.success) {
-                            // If your Python backend returns a raw text string
-                            if (typeof data.summary === 'string') {
-                                summaryViewArea.style.display = 'block';
-                                summaryContent.textContent = data.summary;
-                            }
-                            // Fallback rendering structure if data.summary arrives as an array
-                            else if (Array.isArray(data.summary)) {
-                                summaryViewArea.style.display = 'block';
-                                let htmlContent = '';
-                                data.summary.forEach(item => {
-                                    htmlContent += `<div style="margin-bottom: 15px;"><strong>${item.note_name || 'Note'}:</strong><p>${item.summary || item}</p></div><hr style="border-color: rgba(255,255,255,0.1);">`;
-                                });
-                                summaryContent.innerHTML = htmlContent;
-                            }
-                        } else {
-                            alert(data.error || "Could not generate pool space summary.");
-                        }
-                    })
-                    .catch(err => {
-                        isProcessing = false;
-                        newBtn.disabled = false;
-                        if (btnText) {
-                            btnText.textContent = "Summarize Notes";
-                        }
-                        alert("An unexpected error occurred while communicating with the AI service.");
-                    });
-                });
-            }
-        });
-    </script>
-
-    <!-- Global functions loaded first so drop-down elements run active -->
-    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-
-    <!-- integrates the chat panel into the pool space  -->
-    {% include 'chat_panel.html' %}
+{% include 'chat_panel.html' %}
 
 </body>
 </html>
