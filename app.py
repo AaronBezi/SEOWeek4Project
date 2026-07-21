@@ -259,7 +259,7 @@ def send_message(pool_id):
 
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
-    #update to summarize the recently uploaded note
+    #update to summarize the recently uploaded note(faster summaries instead of summarizing every)
     if not current_user.is_authenticated:
         return jsonify({'error': 'User not logged in'}), 401
 
