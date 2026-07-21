@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const summarizeBtn = document.getElementById('summarize-btn');
     const notesContent = document.getElementById('notes-content');
     const summaryContent = document.getElementById('summary-content');
+    const recBtn = document.getElementById('recommendations-btn');
+    const summaryTitle = document.getElementById('summary-title');
+    const summaryViewArea = document.getElementById('summary-view-area');
 
     const bookFeed = document.getElementById('book-feed');
 
@@ -105,6 +108,69 @@ if (summarizeBtn) {
     summarizeBtn.innerHTML = '<span class="btn-icon">☰</span> <span class="btn-text">Summarize Notes</span>';
     }
 }
+
+if (recBtn) {
+    let isRecProcessing = false;
+    const recIcon = recBtn.querySelector('.btn-icon') ? recBtn.querySelector('.btn-icon').outerHTML : '<span class="btn-icon">&#128366;&#65038;</span>';
+
+    recBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (isRecProcessing || recBtn.disabled) return;
+
+        isRecProcessing = true;
+        recBtn.disabled = true;
+        recBtn.innerHTML = `${recIcon} <span class="btn-text">Finding Books...</span>`;
+
+        const poolId = fileInput ? fileInput.dataset.poolId : null;
+        const parsedPoolId = poolId && poolId !== '0' ? parseInt(poolId, 10) : null;
+
+        fetch('/api/recommendations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group_id: parsedPoolId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            isRecProcessing = false;
+            recBtn.disabled = false;
+            recBtn.innerHTML = `${recIcon} <span class="btn-text">Get Recommendations</span>`;
+
+            if (data.success && data.recommendations) {
+                allRecommendations = data.recommendations;
+                if (bookFeed) {
+                    renderBooks(allRecommendations);
+                } else if (summaryContent) {
+                    if (summaryTitle) summaryTitle.textContent = "Recommended Resources";
+                    if (summaryViewArea) summaryViewArea.style.display = 'block';
+                    summaryContent.style.display = 'block';
+                    if (typeof data.recommendations === 'string') {
+                        summaryContent.textContent = data.recommendations;
+                    } else if (Array.isArray(data.recommendations)) {
+                        summaryContent.innerHTML = data.recommendations.map(book => `
+                            <div style="margin-bottom: 15px;">
+                                <strong>${book.title}</strong>
+                                <p style="margin: 4px 0; font-size: 0.85rem; opacity: 0.8;">${book.authors ? book.authors.join(', ') : 'Unknown Author'}</p>
+                                <p style="margin: 4px 0;">${book.description || 'No description available.'}</p>
+                                ${book.preview_link ? `<a href="${book.preview_link}" target="_blank" style="color: #3b82f6;">Preview</a>` : ''}
+                            </div>
+                        `).join('<hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">');
+                    }
+                }
+            } else {
+                alert(data.error || "Could not load recommendations.");
+            }
+        })
+        .catch(() => {
+            isRecProcessing = false;
+            recBtn.disabled = false;
+            recBtn.innerHTML = `${recIcon} <span class="btn-text">Get Recommendations</span>`;
+            alert("Recommendations request failed. Please try again.");
+        });
+    });
+}
+
+});
+
 /*
    if (summarizeBtn) {
         summarizeBtn.addEventListener('click', function () {
