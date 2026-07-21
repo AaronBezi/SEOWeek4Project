@@ -50,6 +50,7 @@ class Notes_Summary(db.Model):
     from_user_id = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False)
     note_name = db.Column(db.String(80),nullable=False)
     summary_text = db.Column(db.Text,nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey("study_groups.group_id"), nullable = True)
     time_summarized = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
 
 
