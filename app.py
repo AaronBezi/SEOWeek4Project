@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for, flash, redirect, request
+from flask import Flask, render_template, url_for, flash, redirect, request, jsonify
 from flask_behind_proxy import FlaskBehindProxy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,7 +7,7 @@ from database.models import User, Notes, Notes_Summary, StudyGroup, GroupMembers
 from database.database import db
 from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
 from api.openAI_api import generate_summary, generate_quiz_from_summary
-from api.recommendations.rec_queries import create_user_study_profile, gen_books, retrieve_books
+from api.recommendations.rec_queries import search_books
 from pusher import Pusher
 import secrets
 import git
@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)  # this gets the name of the file so Flask knows it's name
+app = Flask(__name__)  # this gets the name of the file so Flask knows its name
 proxied = FlaskBehindProxy(app)  # handle codio redirection
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
@@ -44,12 +44,7 @@ login_manager.init_app(app)  # bind object to this app
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
-# @login_manager.user_loader       #loads User object into flask app.
-# def load_user(user_id):
-#     return db.session.get(User,int(user_id))
+    return db.session.get(User, int(user_id))
 
 
 @app.route("/")
@@ -69,8 +64,7 @@ def register():
             form.email.errors.append('Email already registered.')
             return render_template('register.html', title='Register', form=form)
         hashed_password = generate_password_hash(form.password.data)
-        user = User(username=form.username.data, email=form.email.data,
-                    password=hashed_password)
+        user = User(username=form.username.data, email=form.email.data, password=hashed_password)
         db.session.add(user)  # add user into database
         db.session.commit()  # save changes to database
         login_user(user)  # logins the user so they don't need to log in after signup.
@@ -84,15 +78,13 @@ def register():
 def login():
     form = LoginForm()
     if form.validate_on_submit():  # checks if entries are valid
-        user = User.query.filter_by(
-            email=form.email.data).first()  # searches for user by email and returns that row of user information
-        if user and check_password_hash(user.password,
-                                        form.password.data):  # verifies user exists and then checks if password matches.
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and check_password_hash(user.password, form.password.data):
             login_user(user)
             flash(f'Welcome back, {user.username}!', 'success')
-            return redirect(url_for('home'))  # if so - log in the user and send to home page
+            return redirect(url_for('home'))
 
-        flash(f'Invalid email or password.', 'error')
+        flash('Invalid email or password.', 'error')
 
     return render_template('login.html', title='Sign In', form=form)
 
@@ -116,7 +108,9 @@ def upload():
     if not allowed_file(file.filename):
         return {'error': 'Unsupported file format'}, 400
 
-    group_id = request.form.get('group_id') or None
+    group_id = request.form.get('group_id')
+    if group_id == "0":
+        group_id = None
 
     storage_note_id, filepath = upload_note_file(file)
     Notes.create_Note(current_user.user_id, file.filename, filepath, group_id)  # saves note to database
@@ -130,8 +124,7 @@ def my_notes():
     my_pools = StudyGroup.query.join(GroupMembership, StudyGroup.group_id == GroupMembership.group_id) \
         .filter(GroupMembership.user_id == current_user.user_id).all()
 
-    note_urls = {note.notes_id: get_note_file(note.file_path) for note in
-                 notes}  # list comprehension practice: key: value for x in values
+    note_urls = {note.notes_id: get_note_file(note.file_path) for note in notes}
 
     return render_template('my_notes.html', title='My Notes', notes=notes, my_pools=my_pools, note_urls=note_urls)
 
@@ -158,20 +151,19 @@ def delete_note(note_id):
 @login_required
 def create_pool():
     form = CreatePoolForm()
-    if form.validate_on_submit():  # checks if entries are valid
-        pool = StudyGroup(group_name=form.group_name.data, created_by=current_user.user_id,
-                          is_private=form.is_private.data)
+    if form.validate_on_submit():
+        pool = StudyGroup(group_name=form.group_name.data, created_by=current_user.user_id, is_private=form.is_private.data)
         if pool.is_private:
             pool.invite_code = secrets.token_urlsafe(6)
         db.session.add(pool)
-        db.session.commit()  # commit so pool.group_id actually gets assigned.
+        db.session.commit()
 
         membership = GroupMembership(group_id=pool.group_id, user_id=current_user.user_id)
         db.session.add(membership)
         db.session.commit()
 
         flash(f'Pool "{pool.group_name}" created!', 'success')
-        return redirect(url_for('pool_space', pool_id=pool.group_id))  # if so - send to pool space.
+        return redirect(url_for('pool_space', pool_id=pool.group_id))
     return render_template('create_pool.html', title='Create Pool', form=form)
 
 
@@ -187,10 +179,8 @@ def pool_space(pool_id):
 
     members = User.query.join(GroupMembership, User.user_id == GroupMembership.user_id).filter(
         GroupMembership.group_id == pool_id).all()
-    notes = Notes.query.filter_by(group_id=pool_id).all()  # a list of note objects
-    note_urls = {}  # key = note id, val = file path for that note id
-    for note in notes:
-        note_urls[note.notes_id] = get_note_file(note.file_path)
+    notes = Notes.query.filter_by(group_id=pool_id).all()
+    note_urls = {note.notes_id: get_note_file(note.file_path) for note in notes}
 
     chat_messages = Message.get_pool_messages(pool_id)
 
@@ -205,9 +195,11 @@ def pool_space(pool_id):
         notes=notes,
         note_urls=note_urls,
         chat_messages=chat_messages,
+        my_pools=my_pools,
         pusher_key=os.getenv('PUSHER_KEY'),
         pusher_cluster=os.getenv('PUSHER_CLUSTER')
     )
+
 
 @app.route("/join_pool")
 @login_required
@@ -215,8 +207,7 @@ def join_pool():
     form = JoinPoolForm()
     pools = db.session.query(StudyGroup, User.username).join(User, StudyGroup.created_by == User.user_id).all()
     my_membership_ids = {m.group_id for m in GroupMembership.query.filter_by(user_id=current_user.user_id).all()}
-    return render_template('join_pool.html', title='Join a Pool', pools=pools, my_membership_ids=my_membership_ids,
-                           form=form)
+    return render_template('join_pool.html', title='Join a Pool', pools=pools, my_membership_ids=my_membership_ids, form=form)
 
 
 @app.route("/join_pool/<int:pool_id>/join", methods=['POST'])
@@ -244,7 +235,6 @@ def join_pool_action(pool_id):
 @app.route("/pool_space/<int:pool_id>/message", methods=['POST'])
 @login_required
 def send_message(pool_id):
-    # saves a chat message for this pool and broadcasts it live via pusher to everyone viewing the pool
     membership = GroupMembership.query.filter_by(group_id=pool_id, user_id=current_user.user_id).first()
     if not membership:
         return {'error': 'You are not a member of this pool'}, 403
@@ -267,94 +257,112 @@ def send_message(pool_id):
     return {'success': True}, 200
 
 
-
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
-    # query the users notes and summarize them one by one displaying them to the screen
     if not current_user.is_authenticated:
-        return {'error': 'User not logged in'}, 401
+        return jsonify({'error': 'User not logged in'}), 401
 
-    data = request.get_json() or {}
-
+    data = request.get_json(silent=True) or {}
     group_id = data.get('group_id')
 
-    if group_id:
+    if group_id and str(group_id) != "0":
         notes = Notes.query.filter_by(group_id=group_id).all()
     else:
         notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
 
     if not notes:
-        return {'error': 'No notes found to summarize'}, 400
+        return jsonify({'success': False, 'error': 'No notes found to summarize'}), 400
 
     summaries = []
     for note in notes:
         result = generate_summary(note)
         if not result.get('success'):
-            return {"success": False, 'error': result.get('error', 'Could not generate summary')}, 500
+            return jsonify({"success": False, 'error': result.get('error', 'Could not generate summary')}), 500
         summaries.append({"note_name": note.note_name, "summary": result['summary']})
 
-    return {"success": True, "summary": summaries}, 200
+    return jsonify({"success": True, "summary": summaries}), 200
+
+
+@app.route("/recommendations")
+@login_required
+def recommendations_page():
+    return render_template('recommendations.html', title='Source Search')
 
 
 @app.route("/api/recommendations", methods=['POST'])
 def recommendations():
     if not current_user.is_authenticated:
-        return {'error': 'User not logged in'}, 401
+        return jsonify({'success': False, 'error': 'User not logged in'}), 401
 
-    profile_result = create_user_study_profile(current_user.user_id)
-    if not profile_result.get('success'):
-        return {'success': False, 'error': profile_result.get('error', 'Could not build study profile')}, 400
+    data = request.get_json(silent=True) or {}
+    group_id = data.get('group_id')
 
-    queries_result = gen_books(profile_result)
-    if not queries_result.get('success'):
-        return {'success': False, 'error': queries_result.get('error', 'Could not generate search queries')}, 500
-
-    books_result = retrieve_books(queries_result)
-    if not books_result.get('success'):
-        return {'success': False, 'error': books_result.get('error', 'Could not retrieve books')}, 500
-
-    return {'success': True, 'recommendations': books_result['books']}, 200
-
-
-@app.route("/api/generate_quiz", methods=['POST'])
-def generate_quiz():
-    # queries the workspace context, validates uploaded documents, and builds a quiz layout
-    if not current_user.is_authenticated:
-        return {'error': 'User not logged in'}, 401
-
-    data = request.get_json() or {}
-    group_id = data.get('group_id') or None
-
-    # Query notes depending on whether we are inside a pool space or checking user notes
-    if group_id:
+    if group_id and str(group_id) != "0":
         notes = Notes.query.filter_by(group_id=group_id).all()
     else:
         notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
 
-    # Verify user has notes uploaded
     if not notes:
-        return {"success": False, "error": "No notes found to summarize"}, 200
+        return jsonify({
+            "success": False,
+            "error": "No notes found to generate recommendations. Please upload a document first."
+        }), 400
+
+    note_names = [note.note_name for note in notes if note.note_name]
+    query = " ".join(note_names)
+
+    if not query.strip():
+        query = "textbook study guide"
+
+    rec_results = search_books(query)
+
+    if not rec_results.get("success"):
+        return jsonify({
+            "success": False,
+            "error": rec_results.get("error", "Could not retrieve book recommendations.")
+        }), 400
+
+    return jsonify({
+        "success": True,
+        "recommendations": rec_results['books']
+    }), 200
+
+
+@app.route("/api/generate_quiz", methods=['POST'])
+def generate_quiz():
+    if not current_user.is_authenticated:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    data = request.get_json(silent=True) or {}
+    group_id = data.get('group_id')
+
+    if group_id and str(group_id) != "0":
+        notes = Notes.query.filter_by(group_id=group_id).all()
+    else:
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
+
+    if not notes:
+        return jsonify({"success": False, "error": "No notes found to generate quiz"}), 400
 
     summaries_text = ""
 
-    # Process files one by one converting text elements into more readable text
     for note in notes:
         result = generate_summary(note)
         if result.get('success'):
             summaries_text += f"\nDocument Name ({note.note_name}):\n{result['summary']}\n"
 
     if not summaries_text.strip():
-        return {"success": False, "error": "Could not generate summary"}, 200
+        return jsonify({"success": False, "error": "Could not generate summary for quiz"}), 400
 
     quiz_result = generate_quiz_from_summary(summaries_text)
 
     if not quiz_result.get('success'):
-        return {"success": False, "error": quiz_result.get('error')}, 500
+        return jsonify({"success": False, "error": quiz_result.get('error')}), 500
 
     raw_data = quiz_result.get("quiz_data", {})
     quiz_questions = raw_data.get("quiz", [])
 
-    return {"success": True, "quiz": quiz_questions}, 200
+    return jsonify({"success": True, "quiz": quiz_questions}), 200
 
 
 @app.route("/pool/<int:pool_id>/quiz")
@@ -362,15 +370,19 @@ def pool_quiz(pool_id):
     if not current_user.is_authenticated:
         return redirect(url_for('login'))
 
+    my_pools = StudyGroup.query.join(GroupMembership, StudyGroup.group_id == GroupMembership.group_id) \
+        .filter(GroupMembership.user_id == current_user.user_id).all()
+
     if pool_id == 0:
         pool = {
             "group_id": 0,
             "group_name": "Personal Notes"
         }
-        return render_template('quiz.html', pool=pool)
+        return render_template('quiz.html', pool=pool, my_pools=my_pools)
 
     pool = StudyGroup.query.get_or_404(pool_id)
-    return render_template('quiz.html', pool=pool)
+    return render_template('quiz.html', pool=pool, my_pools=my_pools)
+
 
 @app.route("/update_server", methods=['POST'])
 def webhook():
@@ -378,10 +390,8 @@ def webhook():
         repo = git.Repo('/home/seoproject2/SEOWeek4Project')
         origin = repo.remotes.origin
         origin.pull()
-        # ensures that proper modules are installed after pulling new code
         venv_pip = '/home/seoproject2/.virtualenvs/studypool-venv/bin/pip'
-        result = subprocess.run([venv_pip, 'install', '-r', 'requirements.txt'],
-                                cwd='/home/seoproject2/SEOWeek4Project')
+        result = subprocess.run([venv_pip, 'install', '-r', 'requirements.txt'], cwd='/home/seoproject2/SEOWeek4Project')
         if result.returncode != 0:
             return 'pip install failed', 500
         os.utime('/var/www/seoproject2_pythonanywhere_com_wsgi.py', None)
@@ -390,7 +400,5 @@ def webhook():
         return 'Wrong event type', 400
 
 
-if __name__ == '__main__':  # this should always be at the end
+if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=8080)
-
-
