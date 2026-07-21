@@ -5,8 +5,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const recBtn = document.getElementById('recommendations-btn');
     const notesContent = document.getElementById('notes-content');
     const summaryContent = document.getElementById('summary-content');
+<<<<<<< HEAD
     const summaryViewArea = document.getElementById('summary-view-area');
     const summaryTitle = document.getElementById('summary-title');
+=======
+    const recBtn = document.getElementById('recommendations-btn');
+    const summaryTitle = document.getElementById('summary-title');
+    const summaryViewArea = document.getElementById('summary-view-area');
+>>>>>>> d5c4ed5827a05c2ab75ff88062d0d453c213c293
 
     // --- FILE UPLOAD ---
     if (uploadBtn && fileInput) {
@@ -59,7 +65,112 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (isProcessing || summarizeBtn.disabled) return;
 
+<<<<<<< HEAD
             isProcessing = true;
+=======
+        // Lock it down instantly
+        isProcessing = true;
+        summarizeBtn.disabled = true;
+        summarizeBtn.innerHTML = '<span class="btn-icon">☰</span> <span class="btn-text">Summarizing...</span>';
+
+        const poolId = fileInput ? fileInput.dataset.poolId : null;
+
+        fetch('/api/summarize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group_id: poolId ? parseInt(poolId) : null })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.error || "Could not generate summary.");
+                resetButtonState();
+            }
+        })
+        .catch(() => {
+            alert("Summarization failed.");
+            resetButtonState();
+        });
+    });
+
+    function resetButtonState() {
+        isProcessing = false;
+        summarizeBtn.disabled = false;
+        summarizeBtn.style.opacity = '1';
+        summarizeBtn.style.cursor = 'pointer';
+
+    summarizeBtn.innerHTML = '<span class="btn-icon">☰</span> <span class="btn-text">Summarize Notes</span>';
+    }
+}
+
+if (recBtn) {
+    let isRecProcessing = false;
+    const recIcon = recBtn.querySelector('.btn-icon') ? recBtn.querySelector('.btn-icon').outerHTML : '<span class="btn-icon">&#128366;&#65038;</span>';
+
+    recBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (isRecProcessing || recBtn.disabled) return;
+
+        isRecProcessing = true;
+        recBtn.disabled = true;
+        recBtn.innerHTML = `${recIcon} <span class="btn-text">Finding Books...</span>`;
+
+        const poolId = fileInput ? fileInput.dataset.poolId : null;
+        const parsedPoolId = poolId && poolId !== '0' ? parseInt(poolId, 10) : null;
+
+        fetch('/api/recommendations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group_id: parsedPoolId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            isRecProcessing = false;
+            recBtn.disabled = false;
+            recBtn.innerHTML = `${recIcon} <span class="btn-text">Get Recommendations</span>`;
+
+            if (data.success && data.recommendations) {
+                allRecommendations = data.recommendations;
+                if (bookFeed) {
+                    renderBooks(allRecommendations);
+                } else if (summaryContent) {
+                    if (summaryTitle) summaryTitle.textContent = "Recommended Resources";
+                    if (summaryViewArea) summaryViewArea.style.display = 'block';
+                    summaryContent.style.display = 'block';
+                    if (typeof data.recommendations === 'string') {
+                        summaryContent.textContent = data.recommendations;
+                    } else if (Array.isArray(data.recommendations)) {
+                        summaryContent.innerHTML = data.recommendations.map(book => `
+                            <div style="margin-bottom: 15px;">
+                                <strong>${book.title}</strong>
+                                <p style="margin: 4px 0; font-size: 0.85rem; opacity: 0.8;">${book.authors ? book.authors.join(', ') : 'Unknown Author'}</p>
+                                <p style="margin: 4px 0;">${book.description || 'No description available.'}</p>
+                                ${book.preview_link ? `<a href="${book.preview_link}" target="_blank" style="color: #3b82f6;">Preview</a>` : ''}
+                            </div>
+                        `).join('<hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 12px 0;">');
+                    }
+                }
+            } else {
+                alert(data.error || "Could not load recommendations.");
+            }
+        })
+        .catch(() => {
+            isRecProcessing = false;
+            recBtn.disabled = false;
+            recBtn.innerHTML = `${recIcon} <span class="btn-text">Get Recommendations</span>`;
+            alert("Recommendations request failed. Please try again.");
+        });
+    });
+}
+
+});
+
+/*
+   if (summarizeBtn) {
+        summarizeBtn.addEventListener('click', function () {
+>>>>>>> d5c4ed5827a05c2ab75ff88062d0d453c213c293
             summarizeBtn.disabled = true;
             summarizeBtn.innerHTML = '<span class="btn-icon">&#9776;</span> <span class="btn-text">Summarizing...</span>';
 
