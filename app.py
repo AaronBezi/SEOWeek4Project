@@ -6,7 +6,7 @@ from forms import RegistrationForm, LoginForm, CreatePoolForm, JoinPoolForm
 from database.models import User, Notes, Notes_Summary, StudyGroup, GroupMembership, Message
 from database.database import db
 from storage import allowed_file, upload_note_file, get_note_file, delete_note_file
-from api.openAI_api import generate_summary
+from api.openAI_api import generate_summary, generate_quiz_from_summary
 #from api.recommendations.rec_queries import create_user_study_profile, gen_books, retrieve_books
 from api.recommendations.books_api import recommend
 from pusher import Pusher
@@ -307,7 +307,16 @@ def recommendations():
     rec_results = recommend(note)
     if not rec_results.get("success"):
         return {"success": False, "error": rec_results.get("error","Could not build recommendations")}, 400
-    return {"success": True, "recommendations": rec_results['books']}, 200
+    books = [
+        {
+            "title": book.title,
+            "authors": book.authors or [],
+            "description": book.description or "",
+            "preview_link": book.preview_link
+        }
+        for book in rec_results['books']
+    ]
+    return {"success": True, "recommendations": books}, 200
 
 
 @app.route("/update_server", methods=['POST'])
