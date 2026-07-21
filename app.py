@@ -265,20 +265,25 @@ def summarize():
 
     data = request.get_json(silent=True) or {}
     group_id = data.get('group_id')
-    
+
     if group_id and str(group_id) != "0":
-        notes = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
+        notes = Notes.query.filter_by(group_id=group_id).all()
     else:
-        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
 
     if not notes:
         return jsonify({'success': False, 'error': 'No notes found to summarize'}), 400
-
-    #if true then summary already exost for this note just return it
-    existing = Notes_Summary.query.filter_by(from_notes_id=notes.note_id)
-    if existing:
-        return existing.summary_text
     
+    #checks for any existing entries already adds them to an array and returns instead of generating another api call
+    existing_entries = []
+    for note in notes:
+        existing = Notes_Summary.query.filter_by(from_notes_id=note.notes_id).first()
+        if existing:
+            existing_entries.append({"note_name":existing.note_name, "summary":existing.summary_text})
+    if existing_entries:
+        return jsonify({"success": True, "summary": existing_entries}), 200
+    
+
     summaries = []
     for note in notes:
         result = generate_summary(note)
@@ -290,6 +295,8 @@ def summarize():
     db.session.commit()
 
     return jsonify({"success": True, "summary": summaries}), 200
+
+
 
 
 @app.route("/recommendations")
