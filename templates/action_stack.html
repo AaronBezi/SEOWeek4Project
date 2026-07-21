@@ -1,0 +1,26 @@
+<!-- templates/action_stack.html -->
+<div class="action-stack">
+    <!-- Upload Document Button -->
+    <button class="task-btn" id="upload-btn">
+        <span class="btn-icon">+</span>
+        <span class="btn-text">Upload Doc</span>
+    </button>
+
+    <!-- Summarize Notes Button -->
+    <button class="task-btn summary-btn" id="summarize-btn">
+        <span class="btn-icon">☰</span>
+        <span class="btn-text">Summarize Notes</span>
+    </button>
+
+    <!-- Create a Quiz Button -->
+    <a href="{{ url_for('pool_quiz', pool_id=(pool.group_id if pool is defined and pool and pool.group_id is defined else 0)) }}" class="task-btn quiz-toggle-btn" style="text-decoration: none;" id="quiz-btn">
+        <span class="btn-icon">&#9998;</span>
+        <span class="btn-text">Create a Quiz</span>
+    </a>
+
+    <!-- Study Recommendations Button -->
+    <button class="task-btn recommendation-btn" id="recommendations-btn">
+        <span class="btn-icon">&#167;</span>
+        <span class="btn-text">Source search</span>
+    </button>
+</div>

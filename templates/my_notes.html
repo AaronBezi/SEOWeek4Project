@@ -13,34 +13,38 @@
 </head>
 <body>
 
-    <div id="my-notes-view" class="view active">
-        <header>
-            <div class="logo" onclick="window.location.href='{{ url_for('home') }}'">STUDY POOL</div>
+<header style="display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; box-sizing: border-box; width: 100%;">
+    <div class="logo" onclick="window.location.href='{{ url_for('home') }}'" style="cursor: pointer; font-family: 'Geist Pixel', sans-serif; white-space: nowrap; flex-shrink: 0;">STUDY POOL</div>
 
-            <div class="menu-dropdown">
-                <button class="menu-trigger" onclick="toggleDropdown()" aria-label="Open Menu">
-                    <span class="three-dots"></span>
-                </button>
-                <div id="myDropdown" class="dropdown-content">
-                    <a href="{{ url_for('home') }}">Home</a>
-                    <a href="{{ url_for('create_pool') }}">Create Pool</a>
-                    <a href="{{ url_for('join_pool') }}">Join a Different Pool</a>
-                    {% for pool in my_pools %}
-                        <a href="{{ url_for('pool_space', pool_id=pool.group_id) }}">{{ pool.group_name }}</a>
-                    {% endfor %}
-                </div>
-            </div>
-        </header>
+    <div style="display: flex; align-items: center; gap: 15px; flex-shrink: 0;">
+        <div class="pool-title" style="font-weight: bold; font-size: 1.1rem; white-space: nowrap;">My Notes</div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        <div class="menu-dropdown" style="position: relative; z-index: 1000; margin-left: 5px;">
+            <button class="menu-trigger" onclick="event.stopPropagation(); toggleDropdown();" aria-label="Open Menu" style="background: none; border: none; cursor: pointer; padding: 8px;">
+                <span class="three-dots"></span>
+            </button>
+            <div id="myDropdown" class="dropdown-content" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background-color: #ffffff; min-width: 180px; box-shadow: 0px 8px 16px rgba(0,0,0,0.1); border-radius: 6px; border: 1px solid #e2e8f0; overflow: hidden;">
+                <a href="{{ url_for('home') }}" style="display: block; padding: 10px 16px; text-decoration: none; color: #333;">Home</a>
+                <a href="{{ url_for('create_pool') }}" style="display: block; padding: 10px 16px; text-decoration: none; color: #333;">Create Pool</a>
+                <a href="{{ url_for('join_pool') }}" style="display: block; padding: 10px 16px; text-decoration: none; color: #333;">Join a Different Pool</a>
+                <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 4px 0;">
+                {% for p in my_pools %}
+                    <a href="{{ url_for('pool_space', pool_id=p.group_id) }}" style="display: block; padding: 10px 16px; text-decoration: none; color: #333;">{{ p.group_name }}</a>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
+            </div>
+        </div>
+    </div>
+</header>
 
-        <div class="workspace-container">
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="workspace-container">
             <main class="notes-section">
                 <h2>Your Notes</h2>
                 <div class="notes-grid" id="notes-content">
@@ -62,173 +66,19 @@
                 <div id="summary-content" style="display:none;"></div>
             </main>
 
-            <input type="file" id="file-input" style="display:none"
-                   accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg">
 
-            <div class="action-stack">
-                <button class="task-btn" id="upload-btn">
-                    <span class="btn-icon">+</span>
-                    <span class="btn-text">Upload Doc</span>
-                </button>
-                <button class="task-btn summary-btn" id="summarize-btn">
-                    <span class="btn-icon">☰</span>
-                    <span class="btn-text">Summarize Notes</span>
-                </button>
-                <!-- Added personal notes quiz generation link -->
-                <a href="{{ url_for('pool_quiz', pool_id=0) }}" class="task-btn quiz-toggle-btn" style="text-decoration: none;" id="personal-quiz-btn">
-                    <span class="btn-icon">&#9998;</span>
-                    <span class="btn-text">Create a Quiz</span>
-                </a>
-            </div>
-        </div>
+    <input type="file" id="file-input" style="display:none"
+           accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+           data-pool-id="0">
 
-        <footer>
-            &copy; 2026 Study Pool
-        </footer>
-    </div>
+    <!-- Exact Reusable Action Stack -->
+    {% include 'action_stack.html' %}
+</div>
 
-    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<a class="auth-back-link" href="{{ url_for('home') }}">Back to home</a>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const uploadBtn = document.getElementById('upload-btn');
-            const fileInput = document.getElementById('file-input');
-            const summarizeBtn = document.getElementById('summarize-btn');
-            const summaryContent = document.getElementById('summary-content');
-            const quizBtn = document.getElementById('personal-quiz-btn');
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<script src="{{ url_for('static', filename='js/action_stack.js') }}"></script>
 
-            // --- Document Upload Feature Implementation ---
-            if (uploadBtn && fileInput) {
-                // When you click the styled upload button, open the invisible system file menu box
-                uploadBtn.addEventListener('click', function() {
-                    fileInput.click();
-                });
-
-                // Detect when a user picks a file to submit
-                fileInput.addEventListener('change', function() {
-                    if (!fileInput.files || fileInput.files.length === 0) return;
-
-                    const file = fileInput.files[0];
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    // Pass null or omit group_id because these are personal workspace uploads
-                    formData.append('group_id', '');
-
-                    const btnText = uploadBtn.querySelector('.btn-text');
-                    if (btnText) btnText.textContent = "Uploading...";
-                    uploadBtn.disabled = true;
-
-                    fetch('/upload', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(res => {
-                        if (res.redirected) {
-                            window.location.href = res.url;
-                            return;
-                        }
-                        return res.json().then(data => {
-                            if (data.success || res.ok) {
-                                window.location.reload();
-                            } else {
-                                alert(data.error || "File upload failed.");
-                                resetUploadBtn();
-                            }
-                        });
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        alert("An unexpected transport error occurred during the document upload process.");
-                        resetUploadBtn();
-                    });
-                });
-            }
-
-            function resetUploadBtn() {
-                if (uploadBtn) {
-                    uploadBtn.disabled = false;
-                    const btnText = uploadBtn.querySelector('.btn-text');
-                    if (btnText) btnText.textContent = "Upload Doc";
-                }
-            }
-
-            // --- Quiz Pathing Configuration ---
-            if (quizBtn) {
-                quizBtn.addEventListener('click', function(e) {
-                    // Allows default navigation to your quiz routing blueprint view template
-                });
-            }
-
-            // --- Document Text Processing Engine (Summarize) ---
-            if (summarizeBtn) {
-                let isProcessing = false;
-
-                const newBtn = summarizeBtn.cloneNode(true);
-                summarizeBtn.parentNode.replaceChild(newBtn, summarizeBtn);
-
-                newBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (isProcessing) return;
-
-                    isProcessing = true;
-                    newBtn.disabled = true;
-
-                    const btnText = newBtn.querySelector('.btn-text');
-                    if (btnText) {
-                        btnText.textContent = "Summarizing...";
-                    }
-
-                    fetch('/api/summarize', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ group_id: null })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        isProcessing = false;
-                        newBtn.disabled = false;
-
-                        if (btnText) {
-                            btnText.textContent = "Summarize Notes";
-                        }
-
-                        if (data.success) {
-                            if (summaryContent) {
-                                summaryContent.style.display = 'block';
-                                summaryContent.style.marginTop = '20px';
-                                summaryContent.style.padding = '15px';
-                                summaryContent.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                                summaryContent.style.border = '1px solid rgba(0,0,0,0.1)';
-                                summaryContent.style.borderRadius = '8px';
-                                summaryContent.style.whiteSpace = 'pre-wrap';
-
-                                if (typeof data.summary === 'string') {
-                                    summaryContent.innerHTML = `<h3>Personal Summary Workspace</h3><div>${data.summary}</div>`;
-                                } else if (Array.isArray(data.summary)) {
-                                    let htmlContent = '<h3>Personal Summary Workspace</h3>';
-                                    data.summary.forEach(item => {
-                                        htmlContent += `<div style="margin-bottom: 15px;"><strong>${item.note_name || 'Note'}:</strong><p>${item.summary || item}</p></div><hr style="border-color: rgba(255,255,255,0.1);">`;
-                                    });
-                                    summaryContent.innerHTML = htmlContent;
-                                }
-                            }
-                        } else {
-                            alert(data.error || "Could not generate summary.");
-                        }
-                    })
-                    .catch(err => {
-                        isProcessing = false;
-                        newBtn.disabled = false;
-                        if (btnText) {
-                            btnText.textContent = "Summarize Notes";
-                        }
-                        alert("An unexpected error occurred while communicating with the AI service.");
-                    });
-                });
-            }
-        });
-    </script>
 </body>
 </html>
