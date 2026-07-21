@@ -259,26 +259,35 @@ def send_message(pool_id):
 
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
+    #update to summarize the recently uploaded note
     if not current_user.is_authenticated:
         return jsonify({'error': 'User not logged in'}), 401
 
     data = request.get_json(silent=True) or {}
     group_id = data.get('group_id')
-
+    
     if group_id and str(group_id) != "0":
-        notes = Notes.query.filter_by(group_id=group_id).first()
+        notes = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
     else:
-        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).first()
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
 
     if not notes:
         return jsonify({'success': False, 'error': 'No notes found to summarize'}), 400
 
+    #if true then summary already exost for this note just return it
+    existing = Notes_Summary.query.filter_by(from_notes_id=notes.note_id)
+    if existing:
+        return existing.summary_text
+    
     summaries = []
     for note in notes:
         result = generate_summary(note)
         if not result.get('success'):
             return jsonify({"success": False, 'error': result.get('error', 'Could not generate summary')}), 500
         summaries.append({"note_name": note.note_name, "summary": result['summary']})
+        summary_note = Notes_Summary(from_notes_id=note.notes_id,from_user_id=current_user.user_id,note_name=note.note_name,summary_text=result['summary'],group_id=note.group_id)
+        db.session.add(summary_note)
+    db.session.commit()
 
     return jsonify({"success": True, "summary": summaries}), 200
 
