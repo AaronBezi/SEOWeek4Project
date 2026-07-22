@@ -423,21 +423,18 @@ def recommendations():
     group_id = data.get('group_id')
 
     if group_id and str(group_id) != "0":
-        notes = Notes.query.filter_by(group_id=group_id).all()
+        recent_note = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
     else:
-        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
+        recent_note = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
 
-    if not notes:
+    if not recent_note:
         return jsonify({
             "success": False,
             "error": "No notes found to generate recommendations. Please upload a document first."
         }), 400
 
-    note_names = [note.note_name for note in notes if note.note_name]
-    query = " ".join(note_names)
-
-    if not query.strip():
-        query = "textbook study guide"
+    #for simplicty use note name as the query, future: use docanalysis and vector embeddings
+    query = recent_note.note_name or "textbook study guide for first year engineering majors"
 
     rec_results = search_books(query)
 
