@@ -337,9 +337,9 @@ def send_message(pool_id):
     return {'success': True}, 200
 
 
+
 @app.route("/api/summarize", methods=['POST'])
 def summarize():
-    #update to summarize the recently uploaded note
     if not current_user.is_authenticated:
         return jsonify({'error': 'User not logged in'}), 401
 
@@ -347,31 +347,64 @@ def summarize():
     group_id = data.get('group_id')
 
     if group_id and str(group_id) != "0":
-        notes = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
+        notes = Notes.query.filter_by(group_id=group_id).all()
     else:
-        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
 
     if not notes:
         return jsonify({'success': False, 'error': 'No notes found to summarize'}), 400
     
-    #checks for any existing entries already adds them to an array and returns instead of generating another api call
-    existing_entries = []
-    existing = Notes_Summary.query.filter_by(from_notes_id=notes.notes_id).first()
-    if existing:
-        existing_entries.append({"note_name":existing.note_name, "summary":existing.summary_text})
-        return jsonify({"success": True, "summary": existing_entries}), 200
-    
     summaries = []
-    #for note in notes:
-    result = generate_summary(notes)
-    if not result.get('success'):
-        return jsonify({"success": False, 'error': result.get('error', 'Could not generate summary')}), 500
-    summaries.append({"note_name": notes.note_name, "summary": result['summary']})
-    summary_note = Notes_Summary(from_notes_id=notes.notes_id,from_user_id=current_user.user_id,note_name=notes.note_name,summary_text=result['summary'],group_id=notes.group_id)
-    db.session.add(summary_note)
+    for note in notes:
+        existing = Notes_Summary.query.filter_by(summary_id=note.notes_id).first()#summary for the note exist
+        if existing:
+            summaries.append({"note_name": note.note_name, "summary": existing})
+            return jsonify({"success": True, "summary": summaries}), 200
+
+        result = generate_summary(note)
+        if not result.get('success'):
+            return jsonify({"success": False, 'error': result.get('error', 'Could not generate summary')}), 500
+        summaries.append({"note_name": note.note_name, "summary": result['summary']})
+        summary_note = Notes_Summary(from_notes_id=note.notes_id,from_user_id=note.user_id,note_name=note.note_name,summary_text=result['summary'],group_id=note.group_id)
+        db.session.add(summary_note)
     db.session.commit()
 
     return jsonify({"success": True, "summary": summaries}), 200
+# @app.route("/api/summarize", methods=['POST'])
+# def summarize():
+#     #update to summarize the recently uploaded note
+#     if not current_user.is_authenticated:
+#         return jsonify({'error': 'User not logged in'}), 401
+
+#     data = request.get_json(silent=True) or {}
+#     group_id = data.get('group_id')
+
+#     if group_id and str(group_id) != "0":
+#         notes = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
+#     else:
+#         notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
+
+#     if not notes:
+#         return jsonify({'success': False, 'error': 'No notes found to summarize'}), 400
+    
+#     #checks for any existing entries already adds them to an array and returns instead of generating another api call
+#     existing_entries = []
+#     existing = Notes_Summary.query.filter_by(from_notes_id=notes.notes_id).first()
+#     if existing:
+#         existing_entries.append({"note_name":existing.note_name, "summary":existing.summary_text})
+#         return jsonify({"success": True, "summary": existing_entries}), 200
+    
+#     summaries = []
+#     #for note in notes:
+#     result = generate_summary(notes)
+#     if not result.get('success'):
+#         return jsonify({"success": False, 'error': result.get('error', 'Could not generate summary')}), 500
+#     summaries.append({"note_name": notes.note_name, "summary": result['summary']})
+#     summary_note = Notes_Summary(from_notes_id=notes.notes_id,from_user_id=current_user.user_id,note_name=notes.note_name,summary_text=result['summary'],group_id=notes.group_id)
+#     db.session.add(summary_note)
+#     db.session.commit()
+
+#     return jsonify({"success": True, "summary": summaries}), 200
 
 
 
