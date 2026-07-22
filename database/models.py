@@ -53,6 +53,15 @@ class Notes_Summary(db.Model):
     group_id = db.Column(db.Integer, db.ForeignKey("study_groups.group_id"), nullable = True)
     time_summarized = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
 
+class Quizes(db.Model):
+    __tablename__ = "quizes"
+    quiz_id = db.Column(db.Integer,primary_key=True)
+    note_id = db.Column(db.Integer,db.ForeignKey("notes_summaries.summary_id"))#summary note quiz came from
+    user_id = db.Column(db.Integer,db.ForeignKey("users.user_id"),nullable=False) #user who created the quiz
+    group_id = db.Column(db.Integer, db.ForeignKey("study_groups.group_id"), nullable = True)   #pool this quiz was generated in
+    quiz_questions = db.Column(db.JSON,nullable=False)
+    time_created = db.Column(db.DateTime(timezone=True),nullable=False,default=datetime.utcnow)
+    
 
     def get_summary(note_id):
         #queries summary for a given note
