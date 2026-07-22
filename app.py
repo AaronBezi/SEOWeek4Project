@@ -454,65 +454,62 @@ def recommendations():
     }), 200
 
 
-
-
 @app.route("/api/generate_quiz", methods=['POST'])
 def generate_quiz():
+    #no need to query two objects just use one
     if not current_user.is_authenticated:
         return jsonify({'error': 'User not logged in'}), 401
 
     data = request.get_json(silent=True) or {}
     group_id = data.get('group_id')
 
+    #queires the recently uploaded note in the pool or persoanl space depending on where the user is currently located
     if group_id and str(group_id) != "0":
-        note = Notes.query.filter_by(group_id=group_id).all()
         recent_note = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
     else:
-        note = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
-        recent_note = Notes.query.filter_by(user_id=current_user.user_id).order_by(Notes.time_uploaded.desc()).first()
+        recent_note = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
 
-
-    if not note:
+    if not recent_note:
         return jsonify({"success": False, "error": "No notes found to generate quiz"}), 400
 
-    recent_summary_note = Notes_Summary.query.filter_by(summary_id=recent_note.notes_id).first()#checks if there is a summary already for the recent note
+    #checks if there is already a summary for the note, if there is no need to generate another
+    recent_summary_note = Notes_Summary.query.filter_by(from_notes_id=recent_note.notes_id).first()
     if recent_summary_note:
+        #if there is already a quiz for this summary we just return the quiz and exit
         quiz_summary = Quizes.query.filter_by(note_id=recent_summary_note.summary_id).first()
-        if quiz_summary:#quiz already exist for this note just return it
+        if quiz_summary:
             return jsonify({"success": True, "quiz": quiz_summary.quiz_questions}), 200
-        
-    summaries_text = ""
-    #for note in notes:
-    #check if existing summary for the note
-    existing = Notes_Summary.query.filter_by(summary_id=note.notes_id).first()
-    if existing:
-        summaries_text += f"\nDocument Name ({note.note_name}):\n{existing.summary_text}\n"
+
+    #no summary or no quiz generate summary then pass into gen quiz function.
+    if recent_summary_note:
+        summaries_text = f"\nDocument Name ({recent_note.note_name}):\n{recent_summary_note.summary_text}\n"
     else:
-        #generate summary for the note
-        result = generate_summary(note)
+        result = generate_summary(recent_note)
         if not result.get("success"):
             return jsonify({"success": False, "error": result.get("error", "Could not create summary for this note")}), 500
-        #create summary_note object then add to the database
-        summary_note = Notes_Summary(from_notes_id=note.notes_id,from_user_id=note.user_id,note_name=note.note_name,summary_text=result['summary'],group_id=note.group_id)
-        db.session.add(summary_note)
+
+        recent_summary_note = Notes_Summary(from_notes_id=recent_note.notes_id,from_user_id=recent_note.user_id,note_name=recent_note.note_name,summary_text=result['summary'],group_id=recent_note.group_id)
+        db.session.add(recent_summary_note)
         db.session.commit()
-        summaries_text += f"\nDocument Name ({note.note_name}):\n{result['summary']}\n"
+        summaries_text = f"\nDocument Name ({recent_note.note_name}):\n{result['summary']}\n"
 
     if not summaries_text.strip():
         return jsonify({"success": False, "error": "Could not generate summary for quiz"}), 400
 
     quiz_result = generate_quiz_from_summary(summaries_text)
-
     if not quiz_result.get('success'):
         return jsonify({"success": False, "error": quiz_result.get('error')}), 500
 
     raw_data = quiz_result.get("quiz_data", {})
     quiz_questions = raw_data.get("quiz", [])
-    quiz = Quizes(note_id=recent_note.notes_id,user_id=recent_note.user_id,group_id=recent_note.group_id,quiz_questions=quiz_questions)
+
+    quiz = Quizes(note_id=recent_summary_note.summary_id,user_id=recent_note.user_id,group_id=recent_note.group_id,quiz_questions=quiz_questions)
     db.session.add(quiz)
     db.session.commit()
-    
+
     return jsonify({"success": True, "quiz": quiz_questions}), 200
+
+
 
 
 @app.route("/pool/<int:pool_id>/quiz")
