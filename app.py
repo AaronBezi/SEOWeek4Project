@@ -414,6 +414,7 @@ def recommendations_page():
     return render_template('recommendations.html', title='Source Search')
 
 
+
 @app.route("/api/recommendations", methods=['POST'])
 def recommendations():
     if not current_user.is_authenticated:
@@ -423,18 +424,21 @@ def recommendations():
     group_id = data.get('group_id')
 
     if group_id and str(group_id) != "0":
-        recent_note = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
+        notes = Notes.query.filter_by(group_id=group_id).all()
     else:
-        recent_note = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
+        notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).all()
 
-    if not recent_note:
+    if not notes:
         return jsonify({
             "success": False,
             "error": "No notes found to generate recommendations. Please upload a document first."
         }), 400
 
-    #for simplicty use note name as the query, future: use docanalysis and vector embeddings
-    query = recent_note.note_name or "textbook study guide for first year engineering majors"
+    note_names = [note.note_name for note in notes if note.note_name]
+    query = " ".join(note_names)
+
+    if not query.strip():
+        query = "textbook study guide"
 
     rec_results = search_books(query)
 
@@ -448,6 +452,44 @@ def recommendations():
         "success": True,
         "recommendations": rec_results['books']
     }), 200
+
+
+#updated recomend below: slighlty buggy, old version above
+
+# @app.route("/api/recommendations", methods=['POST'])
+# def recommendations():
+#     if not current_user.is_authenticated:
+#         return jsonify({'success': False, 'error': 'User not logged in'}), 401
+
+#     data = request.get_json(silent=True) or {}
+#     group_id = data.get('group_id')
+
+#     if group_id and str(group_id) != "0":
+#         recent_note = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
+#     else:
+#         recent_note = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
+
+#     if not recent_note:
+#         return jsonify({
+#             "success": False,
+#             "error": "No notes found to generate recommendations. Please upload a document first."
+#         }), 400
+
+#     #for simplicty use note name as the query, future: use docanalysis and vector embeddings
+#     query = recent_note.note_name or "textbook study guide for first year engineering majors"
+
+#     rec_results = search_books(query)
+
+#     if not rec_results.get("success"):
+#         return jsonify({
+#             "success": False,
+#             "error": rec_results.get("error", "Could not retrieve book recommendations.")
+#         }), 400
+
+#     return jsonify({
+#         "success": True,
+#         "recommendations": rec_results['books']
+#     }), 200
 
 
 @app.route("/api/generate_quiz", methods=['POST'])
