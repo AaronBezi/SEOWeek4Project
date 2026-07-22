@@ -421,73 +421,7 @@ def recommendations():
     }), 200
 
 
-# @app.route("/api/generate_quiz", methods=['POST'])
-# def generate_quiz():
-#     if not current_user.is_authenticated:
-#         return jsonify({'error': 'User not logged in'}), 401
 
-#     data = request.get_json(silent=True) or {}
-#     group_id = data.get('group_id')
-
-#     #get recently uplaoded user or group note
-#     if group_id and str(group_id) != "0":
-#         notes = Notes.query.filter_by(group_id=group_id).order_by(Notes.time_uploaded.desc()).first()
-#     else:
-#         notes = Notes.query.filter_by(user_id=current_user.user_id, group_id=None).order_by(Notes.time_uploaded.desc()).first()
-
-#     if not notes:
-#         return jsonify({"success": False, "error": "No notes found to generate quiz"}), 400
-
-#     summaries_text = ""
-
-#     #get existing summary for the note if it exist if not then generate one
-#     existing = Notes_Summary.query.filter_by(from_notes_id=notes.notes_id).first()
-#     if existing:
-#         existing_quiz = Quizes.query.filter_by(note_id=existing.summary_id).first()#if quiz already exist for this summary note return
-#         if existing_quiz:
-#             quiz_questions = existing_quiz.quiz_questions
-#             return jsonify({"success": True, "quiz": quiz_questions}), 200
-        
-#         #if quiz does not exist for the summary then generate a quiz
-#         summary_text = existing.summary_text
-#         summaries_text+= f"\nDocument Name ({notes.note_name}):\n{summary_text}\n"
-#         if not summaries_text.strip():
-#             return jsonify({"success": False, "error": "Could not generate summary for quiz"}), 400
-#         quiz_result = generate_quiz_from_summary(summaries_text)
-#         if not quiz_result.get('success'):
-#             return jsonify({"success": False, "error": quiz_result.get('error')}), 500
-
-#         raw_data = quiz_result.get("quiz_data", {})
-#         quiz_questions = raw_data.get("quiz", [])
-#         quiz_JSON = Quizes(note_id=existing.from_notes_id,user_id=existing.from_user_id,group_id=existing.group_id,quiz_questions=quiz_questions)
-#         db.session.add(quiz_JSON)
-#         db.session.commit()
-#         return jsonify({"success": True, "quiz": quiz_questions}), 200
-
-#     #If a summary for the note does not exist make one, then create quiz: will rarely occur
-#     result = generate_summary(notes)
-#     if result.get('success'):
-#         summaries_text += f"\nDocument Name ({notes.note_name}):\n{result['summary']}\n"
-
-#     if not summaries_text.strip():
-#         return jsonify({"success": False, "error": "Could not generate summary for quiz"}), 400
-
-#     summary_note = Notes_Summary(from_notes_id=notes.notes_id,from_user_id=notes.from_user_id,note_name=notes.note_name,summary_text=result['summary'],group_id=notes.group_id)
-#     db.session.add(summary_note)
-#     db.session.commit()
-#     quiz_result = generate_quiz_from_summary(summaries_text)
-
-#     if not quiz_result.get('success'):
-#         return jsonify({"success": False, "error": quiz_result.get('error')}), 500
-
-#     raw_data = quiz_result.get("quiz_data", {})
-#     quiz_questions = raw_data.get("quiz", [])
-#     quiz_JSON = Quizes(note_id=notes.notes_id,user_id=notes.user_id,group_id=notes.group_id,quiz_questions=quiz_questions)
-#     db.session.add(quiz_JSON)
-#     db.session.commit()
-
-
-#     return jsonify({"success": True, "quiz": quiz_questions}), 200
 
 @app.route("/api/generate_quiz", methods=['POST'])
 def generate_quiz():
